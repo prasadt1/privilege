@@ -10,7 +10,7 @@ Do not paste AI prose into Devpost.
 - [ ] Open primary **Codex** session with GPT-5.6, run Session 1 from
       `CODEX-SESSIONS.md` (or re-implement/verify core there), capture
       `/feedback` Session ID into `.openai_session_id` (gitignored)
-- [ ] Choose the real project name; rename package/repo/README title
+- [x] Project name: **Privilege** (package/CLI `privilege`)
 - [ ] Repo public + `LICENSE`, or private shared with
       `testing@devpost.com` and `build-week-event@openai.com`
 - [ ] Video ≤3 min on YouTube (Unlisted OK), incognito-tested

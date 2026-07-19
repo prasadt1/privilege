@@ -1,4 +1,4 @@
-# Confide *(working title — rename me)*
+# Privilege
 
 > **Pitch:** Existing tools protect identities. This one protects engagement
 > confidentiality — cumulatively — before GPT-5.6 sees your next prompt.
@@ -14,7 +14,8 @@ your laptop. Before analysis, the tool:
 4. Returns **Allow / Transform / Block** and writes an inspectable **receipt**
 
 **Track:** OpenAI Build Week · Work & Productivity  
-**License:** Apache-2.0
+**License:** Apache-2.0  
+**Name:** Privilege (chosen by author — protects engagement-confidential *facts*, not just named entities)
 
 ---
 
@@ -39,7 +40,7 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 
 # Offline mosaic demo (deterministic mock attacker — no API key)
-python demo/seed.py --db /tmp/confide.sqlite3 --run-demo --mock
+python demo/seed.py --db /tmp/privilege.sqlite3 --run-demo --mock
 
 # Eval (baseline vs cumulative treatment)
 python eval/run.py
@@ -57,16 +58,16 @@ Live GPT-5.6 (optional):
 
 ```bash
 export OPENAI_API_KEY=sk-...
-# optional: export CONFIDE_MODEL=gpt-5.6
-python demo/seed.py --db /tmp/confide-live.sqlite3 --live --run-demo
+# optional: export PRIVILEGE_MODEL=gpt-5.6
+python demo/seed.py --db /tmp/privilege-live.sqlite3 --live --run-demo
 ```
 
 ### CLI
 
 ```bash
-confide --mock --db /tmp/confide.sqlite3 list
-confide --mock --db /tmp/confide.sqlite3 status --engagement eng_...
-confide --mock --db /tmp/confide.sqlite3 preflight \
+privilege --mock --db /tmp/privilege.sqlite3 list
+privilege --mock --db /tmp/privilege.sqlite3 status --engagement eng_...
+privilege --mock --db /tmp/privilege.sqlite3 preflight \
   --engagement eng_... --document doc_... \
   --task "Is an exit from the Nordics on the table?"
 ```
@@ -74,7 +75,7 @@ confide --mock --db /tmp/confide.sqlite3 preflight \
 ### Local web UI
 
 ```bash
-CONFIDE_MOCK=1 python -m src.server_http --db /tmp/confide.sqlite3 --port 7077
+PRIVILEGE_MOCK=1 python -m src.server_http --db /tmp/privilege.sqlite3 --port 7077
 # open http://127.0.0.1:7077
 ```
 
@@ -82,7 +83,7 @@ CONFIDE_MOCK=1 python -m src.server_http --db /tmp/confide.sqlite3 --port 7077
 
 ```bash
 pip install -e ".[mcp]"
-CONFIDE_MOCK=1 python -m src.server_mcp --db /tmp/confide.sqlite3
+PRIVILEGE_MOCK=1 python -m src.server_mcp --db /tmp/privilege.sqlite3
 ```
 
 MCP tools: `preflight`, `analyze`, `status`, `list_documents`.  
@@ -150,7 +151,7 @@ See [`SPEC.md`](SPEC.md) and [`HANDOFF.md`](HANDOFF.md).
 
 ## Author checklist
 
-- [ ] Rename project (admins: don't let AI name it)
+- [x] Project name chosen: **Privilege**
 - [ ] Write Devpost description in your own voice ([`SUBMISSION.md`](SUBMISSION.md))
 - [ ] Create Devpost page early; paste `/feedback` Session ID
 - [ ] Record ≤3 min video narrating Codex + GPT-5.6 usage

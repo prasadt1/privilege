@@ -1,9 +1,10 @@
-# Build Week spec — engagement confidentiality preflight
-*(working title only — YOU name it, per the admins' "don't let AI name your project." Short, human, non-generic.)*
+# Build Week spec — Privilege
+*(Name chosen by Prasad: Privilege — engagement-confidential facts, not just entities.)*
 
 **Track:** Work & Productivity · **Deadline:** Tue Jul 21, 5:00 PM PT (= Wed 2:00 AM CEST)
 **Pitch:** Existing tools protect identities. This one protects engagement confidentiality —
 cumulatively — before GPT-5.6 sees your next prompt.
+**Package / CLI:** `privilege` · **Env:** `PRIVILEGE_MOCK`, `PRIVILEGE_MODEL` · **Vault:** `~/.privilege/vault.sqlite3`
 
 **Ground rules (compliance-critical):**
 - Majority of core functionality is built IN CODEX — this spec gets pasted into
@@ -13,7 +14,7 @@ cumulatively — before GPT-5.6 sees your next prompt.
 - NEW codebase. Do NOT copy Engram code. Engram may be disclosed only as
   conceptual prior art for receipts/audit patterns — not as a source to lift from.
 - Claude/Cursor role: spec + review + peripheral docs. Codex implements the cited core.
-- Prasad names the project and writes the Devpost description in his own voice.
+- Project name is **Privilege** (chosen by Prasad). Prasad writes the Devpost description in his own voice.
 
 ## Product promise
 
@@ -216,5 +217,5 @@ for solo practitioners — not “we invented redaction.”
 - [ ] README: setup, sample data, judge path without rebuilding, related work,
       honest trust-boundary limits
 - [ ] Description written by Prasad, not pasted AI prose
-- [ ] Name chosen by Prasad
+- [x] Name chosen by Prasad: **Privilege**
 - [ ] Devpost submission page created EARLY

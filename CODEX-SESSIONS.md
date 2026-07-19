@@ -6,14 +6,15 @@ One prompt per build session. **Select GPT-5.6 before each.** Prepend
 Grab the `/feedback` Session ID from **Session 1** — that's the thread you cite
 in the submission form.
 
-Replace `<NAME>` with the project name before pasting anything.
+Project name is locked: **Privilege** (package/CLI: `privilege`).
+Env vars: `PRIVILEGE_MOCK`, `PRIVILEGE_MODEL`. Default vault: `~/.privilege/vault.sqlite3`.
 
 ---
 
 ## STANDING CONTEXT (prepend to every session)
 
 ```
-PROJECT: <NAME> — local engagement-policy confidentiality preflight for
+PROJECT: Privilege — local engagement-policy confidentiality preflight for
 consultants. Raw docs and identity mappings stay on-device. Before GPT-5.6
 analyzes anything, the tool sanitizes known values locally, then uses GPT-5.6
 as a blind attacker against the sanitized candidate PLUS prior sanitized
@@ -57,7 +58,10 @@ CONSTRAINTS:
 TASK: Build the local vault, engagement policy model, and sanitizer.
 
 Create repo layout:
-  pyproject.toml (name=<NAME>, python>=3.11, deps: openai, pytest; optional mcp)
+  pyproject.toml (name=privilege, python>=3.11, deps: openai, pytest; optional mcp)
+  CLI entry point: privilege = src.cli:main
+  Default DB path: ~/.privilege/vault.sqlite3
+  Env: PRIVILEGE_MOCK=1 for offline mock attacker; PRIVILEGE_MODEL for model slug
   LICENSE (Apache-2.0)
   src/store.py  src/policy.py  src/sanitize.py
   tests/test_store.py  tests/test_sanitize.py  tests/test_policy.py
@@ -209,7 +213,7 @@ honest numbers. Weak results stay published.
 TASK: Surfaces over service.py. Cut order if short on time: skip MCP, then
 thin the web UI — never skip CLI.
 
-src/cli.py — commands:
+src/cli.py — prog name `privilege`, commands:
   init-engagement --name --policy-file
   import --engagement ID --file path
   preflight --engagement ID --document ID --task "..."
@@ -217,9 +221,11 @@ src/cli.py — commands:
   status   --engagement ID
   export-receipt --id OUT.json
   eval     (wraps eval/run.py)
+  Honor PRIVILEGE_MOCK / --mock for offline attacker.
 
 src/server_http.py + web/index.html:
   Local HTTP on :7077
+  Title/brand: Privilege
   Pages/panes: engagement setup, document import, preflight run,
   three-column view (raw local-only | sanitized | restored result),
   receipts feed, ledger length.
@@ -229,6 +235,7 @@ src/server_http.py + web/index.html:
   public-looking endpoints.
 
 src/server_mcp.py (thin, optional if time):
+  FastMCP server name: "privilege"
   Tools: preflight(engagement_id, document_id, task),
          analyze(...), status(engagement_id)
   NEVER tools for import_raw or dump_mappings.

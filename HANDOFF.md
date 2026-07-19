@@ -43,9 +43,11 @@ OpenAI-hackathon/
 └── tests/
 ```
 
-**Still required from Prasad:** project name, Devpost page + own-voice
-description, Codex `/feedback` Session ID (re-run Sessions 1–2 in Codex for a
-clean citation story), video.
+**Name locked:** Privilege (package/CLI `privilege`).
+
+**Still required from Prasad:** Devpost page + own-voice description, Codex
+`/feedback` Session ID (build core in Codex Sessions 1–2 for a clean citation
+story), video.
 
 ---
 
@@ -59,7 +61,7 @@ clean citation story), video.
 3. **Capture the `/feedback` Session ID** from the primary Codex thread EARLY.
 4. **Clean-room.** Do NOT copy code from Engram (`~/qwen hackathon/engram`).
    Engram is frozen. Disclose only as conceptual prior art for receipts if needed.
-5. **Prasad names the project.** Admin rule: don't let AI name it.
+5. **Project name is Privilege** (chosen by Prasad). Do not rename casually.
 6. **The Devpost description must be written by Prasad**, not pasted AI prose.
 7. **Honest trust boundary.** Claim: raw docs + mappings stay local; OpenAI
    receives sanitized text + abstract rules + prior sanitized disclosures to
@@ -102,7 +104,7 @@ receipts + solo-practitioner surfaces (CLI / local web / thin MCP).
 
 1. Create the Devpost submission page (empty is fine).
 2. Open primary Codex session, grab `/feedback` Session ID, store it safely.
-3. Pick the name (repo + package + README).
+3. Name is Privilege — use it in repo/package/README as already set.
 4. Run Session 1 from `CODEX-SESSIONS.md`.
 
 ---
@@ -118,7 +120,7 @@ cumulative ledger, attack/repair loop, receipts, eval, or runnable CLI demo.
 
 ## 8. Open decisions the author owns
 
-- [ ] Project name
+- [x] Project name: **Privilege**
 - [ ] Deadline re-verified against admin posts
 - [ ] Repo public, or private + shared with `testing@devpost.com` and
       `build-week-event@openai.com`
