@@ -1,10 +1,8 @@
-# Codex session prompts — paste-ready
+# Build plan — Codex sessions
 
-One prompt per build session. **Select GPT-5.6 before each.** Prepend
-`STANDING CONTEXT` to every session — fresh Codex threads don't share memory.
-
-Grab the `/feedback` Session ID from **Session 1** — that's the thread you cite
-in the submission form.
+The implementation is split into five sessions, each with a defined scope and
+a done-condition. `STANDING CONTEXT` below carries the architecture and trust
+boundary into every session, since Codex threads don't share memory.
 
 Project name is locked: **Privilege** (package/CLI: `privilege`).
 Env vars: `PRIVILEGE_MOCK`, `PRIVILEGE_MODEL`. Default vault: `~/.privilege/vault.sqlite3`.
