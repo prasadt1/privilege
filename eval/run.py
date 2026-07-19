@@ -1,8 +1,8 @@
 """Run frozen Privilege scenarios with a deterministic mock or live OpenAI.
 
-The mock attacker is intentionally simple and deterministic for CI. It detects
-only authored generic cue combinations; it does not read scenario labels or raw
-values. Live mode delegates the same calls to GPT-5.6 through OpenAIClient.
+MockAttacker is a DETERMINISM/PLUMBING harness for CI only. Its keyword cues
+mirror the frozen scenario vocabulary, so mock results are NOT evidence of
+efficacy. Live mode delegates the unchanged workflow to GPT-5.6.
 """
 
 from __future__ import annotations
@@ -29,7 +29,12 @@ from scenarios import SCENARIOS
 
 
 class MockAttacker:
-    """Deterministic blind attacker for CI, based on generic business cues."""
+    """CI-only determinism/plumbing harness, not an efficacy attacker.
+
+    Its fixed keyword cues deliberately mirror the frozen scenario vocabulary.
+    Do not interpret its scores as evidence that Privilege detects semantic
+    disclosure risk; use committed live results for that limited evidence.
+    """
 
     destination = "openai"
     model = "mock-attacker-v1"
@@ -151,7 +156,7 @@ def run_evaluation(*, live: bool = False) -> dict[str, object]:
             "turns": treatment,
         },
         "limitations": [
-            "Mock results measure a fixed cue-combination attacker, not GPT-5.6 capability.",
+            "MockAttacker is a DETERMINISM/PLUMBING CI harness only. Its keyword cues mirror scenario vocabulary; mock scores are NOT efficacy evidence.",
             "Live results depend on the configured OpenAI model and are not used to alter frozen labels.",
         ],
     }
