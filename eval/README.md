@@ -10,8 +10,11 @@ underperformance must remain published if the live run produces them.
 
 ## Live GPT-5.6 Results
 
-The headline results below are from `results.live.json`, generated with
-`python3.11 eval/run.py --live`. They use the frozen scenarios in
+> **This run is INVALID and is retained only as a record of a failed attempt.**
+> It is not evidence about the approach, in either direction. See "Why this run
+> is invalid" below. A valid live run is pending.
+
+The run below used `eval/run.py --live` against the frozen scenarios in
 `scenarios.py`; those labels were committed before the runner and results.
 
 | Metric | Baseline | Cumulative treatment |
@@ -24,16 +27,35 @@ The headline results below are from `results.live.json`, generated with
 | Expected-decision agreement | 0.0 | 0.0 |
 | Receipt/payload reproducibility | - | 1.0 |
 
-This live run **underperformed the expected result**. Both baseline and
-treatment blocked all 30 turns. That includes all 23 turns authored as benign,
-which yields the reported `1.0` false-block rate. The treatment did not improve
-on baseline leak recall, false-block rate, or task-fact retention; every
-treatment turn also failed its authored expected decision. These numbers are
-published unchanged. The artifact reports decisions and metrics, not a cause
-for the blocks, so this README does not infer one.
+### Why this run is invalid
 
-Per-turn decisions, including failures and blocks, are retained verbatim in
-`results.live.json`.
+No model call in this run ever succeeded. The evidence is unambiguous:
+
+- All 30 turns returned `rounds: 0` — meaning failure occurred on the first
+  call, before any inference was attempted.
+- All 30 turns carry `payload_hash` = `e3b0c442...b855`, which is
+  `sha256("")`. An empty payload is reachable only from the fail-closed
+  exception handler in `src/preflight.py`, never from a completed preflight.
+- Baseline and treatment are identical on every metric. The two modes differ
+  only in whether prior disclosures are supplied to the attacker, so identical
+  results mean neither mode reached the attacker at all.
+
+Cause: the client defaulted to a model slug that the API does not serve, so
+every request raised before inference. Fail-closed behaviour then converted
+each failure into a `Block`.
+
+**What this run does and does not show.** It does not show that cumulative
+checking underperforms — the approach was never exercised. It does confirm one
+designed property: under total remote failure, the system blocked all 30 turns
+and emitted no payload. Nothing leaked when the model was unreachable.
+
+A separate defect this exposed: `_turn_record` in `run.py` did not capture
+`result.error`, so all 30 turns reported `error: None` and a complete outage
+was serialized as a clean metrics table. An evaluator that cannot distinguish
+a policy Block from an infrastructure failure is not trustworthy, and this is
+being fixed before any valid run is published.
+
+Per-turn decisions are retained verbatim in `results.live.json`.
 
 ## Mock CI Artifact
 
