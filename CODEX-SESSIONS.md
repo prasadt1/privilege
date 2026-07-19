@@ -6,8 +6,6 @@ One prompt per build session. **Select GPT-5.6 before each.** Prepend
 Grab the `/feedback` Session ID from **Session 1** — that's the thread you cite
 in the submission form.
 
-**Session 1 feedback/resume ID:** `019f7b52-472f-7d10-a3d7-a60a1ccd29bc`
-
 Project name is locked: **Privilege** (package/CLI: `privilege`).
 Env vars: `PRIVILEGE_MOCK`, `PRIVILEGE_MODEL`. Default vault: `~/.privilege/vault.sqlite3`.
 
