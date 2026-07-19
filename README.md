@@ -30,6 +30,12 @@ your laptop. Before analysis, the tool:
 Honest boundary: *raw docs + mappings stay local; cumulative semantic leak risk
 on sanitized text is checked before send.*
 
+The first implementation pass keeps the local vault, policy model, and
+sanitizer fully offline. `src/store.py` contains raw documents and mappings;
+`src/sanitize.py` performs deterministic masking and local restoration only.
+No module claims anonymity, regulatory compliance, or that sanitized payloads
+are non-sensitive.
+
 ---
 
 ## Quick start (judge path, no rebuild)

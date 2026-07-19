@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "privilege"
+version = "0.1.0"
+description = "Local engagement-policy confidentiality preflight"
+requires-python = ">=3.11"
+dependencies = ["openai"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+mcp = ["mcp"]
+
+[project.scripts]
+privilege = "src.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.setuptools]
+packages = ["src"]
