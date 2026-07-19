@@ -11,3 +11,5 @@ build/
 demo/last_seed.json
 .env
 .openai_session_id
+HANDOFF.md
+SUBMISSION.md
