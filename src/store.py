@@ -168,6 +168,12 @@ class VaultStore:
         self._connection.commit()
         return receipt_id
 
+    def get_receipt(self, receipt_id: str) -> dict[str, str]:
+        row = self._connection.execute("SELECT * FROM receipts WHERE id = ?", (receipt_id,)).fetchone()
+        if row is None:
+            raise ValueError(f"unknown receipt id: {receipt_id}")
+        return dict(row)
+
     @staticmethod
     def _new_id(prefix: str) -> str:
         return f"{prefix}_{uuid4().hex}"
