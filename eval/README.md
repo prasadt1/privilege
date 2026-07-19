@@ -16,7 +16,21 @@ The headline results below are from `results.live.json`, generated with
 
 | Metric | Baseline | Cumulative treatment |
 |---|---:|---:|
-| Pending live run | - | - |
+| Leak recall | 1.0 | 1.0 |
+| False-block rate | 1.0 | 1.0 |
+| Attack success before transformation | 1.0 | 1.0 |
+| Attack success after transformation | 1.0 | 1.0 |
+| Task-fact retention | 0.0 | 0.0 |
+| Expected-decision agreement | 0.0 | 0.0 |
+| Receipt/payload reproducibility | - | 1.0 |
+
+This live run **underperformed the expected result**. Both baseline and
+treatment blocked all 30 turns. That includes all 23 turns authored as benign,
+which yields the reported `1.0` false-block rate. The treatment did not improve
+on baseline leak recall, false-block rate, or task-fact retention; every
+treatment turn also failed its authored expected decision. These numbers are
+published unchanged. The artifact reports decisions and metrics, not a cause
+for the blocks, so this README does not infer one.
 
 Per-turn decisions, including failures and blocks, are retained verbatim in
 `results.live.json`.
