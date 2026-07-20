@@ -48,6 +48,17 @@ for baseline and treatment. Any mode with one or more errors is marked
 `INVALID` and has no efficacy metrics emitted. This prevents fail-closed API
 outages from being published as policy outcomes.
 
+The committed `results.live.json` predates the error-capture fix and therefore
+contains no error-count fields. The numbers are unaffected; the validity rule
+applies to subsequent runs. The published run was verified valid by inspection
+instead: 30 distinct payload hashes, repair rounds ranging 0–2, varied
+decisions, and differing baseline and treatment outcomes — none of which is
+reachable from the fail-closed path.
+
+This run is not repeated. Live runs are non-deterministic, and re-running a
+frozen evaluation until the numbers improve would defeat the purpose of
+freezing the scenarios.
+
 ## Mock CI Artifact
 
 `results.json` is a DETERMINISM/PLUMBING artifact for CI only. `MockAttacker`
