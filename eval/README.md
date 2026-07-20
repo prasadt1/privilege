@@ -59,6 +59,41 @@ This run is not repeated. Live runs are non-deterministic, and re-running a
 frozen evaluation until the numbers improve would defeat the purpose of
 freezing the scenarios.
 
+### Sanitizer change after the run
+
+A later security review found that declared values were only masked on an
+exact, case-sensitive match, so a name in different case, padded with extra
+whitespace, run together, or split across a line break reached the model as
+written. That is fixed.
+
+The published run predates the fix, so the question is whether it is still a
+valid measurement of the current code. It is: all 37 texts the evaluation
+sanitizes (30 disclosures plus the abstract rules) produce byte-identical
+output under the old and new sanitizer, because the frozen scenarios use
+consistent casing and spacing throughout. The fix changes behaviour on
+documents the evaluation does not contain. Reproduce with:
+
+```bash
+python -c "
+from eval.scenarios import SCENARIOS
+from src.policy import EngagementPolicy
+from src.sanitize import sanitize
+
+def old(text, mappings):
+    for real in sorted(mappings, key=len, reverse=True):
+        if real and real in text:
+            text = text.replace(real, mappings[real])
+    return text
+
+diff = 0
+for scenario in SCENARIOS:
+    mappings = EngagementPolicy.from_dict(scenario['policy']).assign_placeholders()
+    for text in [d['text'] for d in scenario['disclosures']] + scenario['policy'].get('abstract_rules', []):
+        diff += sanitize(text, mappings).text != old(text, mappings)
+print('differences:', diff)
+"
+```
+
 ## Mock CI Artifact
 
 `results.json` is a DETERMINISM/PLUMBING artifact for CI only. `MockAttacker`
