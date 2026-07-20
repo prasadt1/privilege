@@ -11,9 +11,20 @@ import subprocess
 import sys
 from typing import Any
 
-from .intake import SUPPORTED_SUFFIXES, extract_text
+from .intake import (
+    SUPPORTED_SUFFIXES,
+    DocumentExtractionError,
+    UnsupportedDocumentError,
+    extract_text,
+)
+from .openai_client import PreflightError
 from .service import PrivilegeService
-from .store import DEFAULT_DB_PATH, VaultStore
+from .store import (
+    DEFAULT_DB_PATH,
+    UnknownDocumentError,
+    UnknownEngagementError,
+    VaultStore,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -46,6 +57,17 @@ def main(argv: list[str] | None = None) -> int:
             _print({"output": str(args.output)})
         else:  # pragma: no cover - argparse dispatch guarantees a command.
             parser.error("unknown command")
+    except (DocumentExtractionError, UnsupportedDocumentError, PreflightError) as error:
+        # Expected operator-facing failures: an unreadable file, an unsupported
+        # format, or a missing credential. A stack trace would only obscure them.
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    except (UnknownEngagementError, UnknownDocumentError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    except json.JSONDecodeError as error:
+        print(f"error: policy file is not valid JSON: {error}", file=sys.stderr)
+        return 2
     finally:
         service.store.close()
     return 0

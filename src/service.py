@@ -15,7 +15,19 @@ from .store import DEFAULT_DB_PATH, VaultStore
 class PrivilegeService:
     def __init__(self, store: VaultStore | None = None, client: Any | None = None) -> None:
         self.store = store or VaultStore(DEFAULT_DB_PATH)
-        self.client = client or client_from_environment()
+        self._client = client
+
+    @property
+    def client(self) -> Any:
+        """Build the remote client on first use.
+
+        Creating an engagement, importing a document, and reading status are
+        entirely local. Constructing them must not require an API key, so the
+        client is resolved only when something is actually about to be sent.
+        """
+        if self._client is None:
+            self._client = client_from_environment()
+        return self._client
 
     def create_engagement(self, name: str, policy: EngagementPolicy | dict[str, Any]) -> str:
         return self.store.create_engagement(name, policy)
