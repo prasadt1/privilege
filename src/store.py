@@ -122,6 +122,15 @@ class VaultStore:
             raise UnknownDocumentError(f"unknown document id: {document_id}")
         return Document(row["id"], row["engagement_id"], row["title"], row["raw_text"], row["created_at"])
 
+    def list_documents(self, engagement_id: str) -> list[dict[str, str]]:
+        """List local document metadata without returning raw document text."""
+        self.get_engagement(engagement_id)
+        rows = self._connection.execute(
+            "SELECT id, engagement_id, title, created_at FROM documents WHERE engagement_id = ? ORDER BY created_at, id",
+            (engagement_id,),
+        )
+        return [dict(row) for row in rows]
+
     def upsert_mapping(self, engagement_id: str, real_value: str, placeholder: str) -> None:
         self.get_engagement(engagement_id)
         self._connection.execute(
@@ -173,6 +182,14 @@ class VaultStore:
         if row is None:
             raise ValueError(f"unknown receipt id: {receipt_id}")
         return dict(row)
+
+    def list_receipts(self, engagement_id: str) -> list[dict[str, str]]:
+        self.get_engagement(engagement_id)
+        rows = self._connection.execute(
+            "SELECT * FROM receipts WHERE engagement_id = ? ORDER BY created_at DESC, id DESC",
+            (engagement_id,),
+        )
+        return [dict(row) for row in rows]
 
     @staticmethod
     def _new_id(prefix: str) -> str:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from hashlib import sha256
 from typing import Any
 
@@ -26,6 +26,7 @@ class PreflightResult:
     matched_rules: list[dict[str, object]]
     prior_disclosure_count: int
     error: str | None = None
+    receipt_id: str | None = None
 
     def receipt_payload(self, *, outbound_sent: bool = False, analysis_sent: bool = False) -> dict[str, Any]:
         """An inspectable receipt without local mappings or raw input."""
@@ -68,17 +69,17 @@ def run_preflight(engagement_id: str, document_id: str, task: str, store: VaultS
             matches = client.match_rules(claims, abstract_rules)
             material = [match for match in matches if match["material"]]
             if not material:
-                return PreflightResult(
+                result = PreflightResult(
                     engagement_id, document_id, "Transform" if rounds else "Allow", candidate,
                     sanitized_task, rounds, claims, matches, len(prior_payloads)
                 )
+                return _save_preflight_receipt(store, result)
             if rounds >= MAX_REPAIR_ROUNDS:
                 result = PreflightResult(
                     engagement_id, document_id, "Block", candidate, sanitized_task, rounds,
                     claims, matches, len(prior_payloads), "material disclosure remains after repairs"
                 )
-                store.save_receipt(engagement_id, result.decision, result.receipt_payload())
-                return result
+                return _save_preflight_receipt(store, result)
             # Re-apply local mappings to an untrusted model rewrite before a
             # later request can leave the device.
             candidate = sanitize(client.propose_rewrite(candidate, material, [sanitized_task]), mappings).text
@@ -87,7 +88,13 @@ def run_preflight(engagement_id: str, document_id: str, task: str, store: VaultS
         result = PreflightResult(engagement_id, document_id, "Block", "", "", 0, [], [], 0, type(error).__name__)
         try:
             store.get_engagement(engagement_id)
-            store.save_receipt(engagement_id, result.decision, result.receipt_payload())
+            return _save_preflight_receipt(store, result)
         except Exception:
             pass
         return result
+
+
+def _save_preflight_receipt(store: VaultStore, result: PreflightResult) -> PreflightResult:
+    """Persist a receipt for Allow, Transform, and Block before analysis starts."""
+    receipt_id = store.save_receipt(result.engagement_id, result.decision, result.receipt_payload())
+    return replace(result, receipt_id=receipt_id)

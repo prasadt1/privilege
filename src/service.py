@@ -29,6 +29,10 @@ class PrivilegeService:
     def analyze(self, preflight: PreflightResult) -> AnalysisResult:
         return analyze_after_preflight(preflight, self.store, self.client)
 
+    def analyze_sanitized(self, preflight: PreflightResult) -> AnalysisResult:
+        """MCP-safe analysis variant that never returns locally restored values."""
+        return analyze_after_preflight(preflight, self.store, self.client, restore_output=False)
+
     def status(self, engagement_id: str) -> dict[str, object]:
         """An MCP-safe view without raw document text or mappings."""
         engagement = self.store.get_engagement(engagement_id)
@@ -43,3 +47,10 @@ class PrivilegeService:
     def export_receipt(self, receipt_id: str) -> dict[str, object]:
         receipt = self.store.get_receipt(receipt_id)
         return {**receipt, "payload_json": json.loads(receipt["payload_json"])}
+
+    def list_documents(self, engagement_id: str) -> list[dict[str, str]]:
+        return self.store.list_documents(engagement_id)
+
+    def list_receipts(self, engagement_id: str) -> list[dict[str, object]]:
+        receipts = self.store.list_receipts(engagement_id)
+        return [{**receipt, "payload_json": json.loads(receipt["payload_json"])} for receipt in receipts]

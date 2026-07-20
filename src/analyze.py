@@ -18,7 +18,9 @@ class AnalysisResult:
     error: str | None = None
 
 
-def analyze_after_preflight(preflight: PreflightResult, store: VaultStore, client: Any) -> AnalysisResult:
+def analyze_after_preflight(
+    preflight: PreflightResult, store: VaultStore, client: Any, *, restore_output: bool = True
+) -> AnalysisResult:
     """Send an allowed sanitized payload, then append it to the local ledger."""
     if preflight.decision not in {"Allow", "Transform"}:
         receipt_id = store.save_receipt(preflight.engagement_id, "Block", preflight.receipt_payload())
@@ -29,7 +31,7 @@ def analyze_after_preflight(preflight: PreflightResult, store: VaultStore, clien
         policy_mappings = engagement.policy.assign_placeholders()
         restore_mappings = {value: policy_mappings[value] for value in engagement.policy.protected_values}
         restore_mappings.update(store.get_mappings(preflight.engagement_id))
-        output = restore(sanitized_output, restore_mappings)
+        output = restore(sanitized_output, restore_mappings) if restore_output else sanitized_output
         store.append_ledger(preflight.engagement_id, "openai", preflight.final_payload)
         receipt_id = store.save_receipt(
             preflight.engagement_id, preflight.decision,

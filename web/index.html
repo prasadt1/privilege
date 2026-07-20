@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privilege</title>
+  <style>
+    :root { color-scheme: dark; --ink: oklch(0.95 0.01 78); --muted: oklch(0.7 0.02 75); --canvas: oklch(0.18 0.018 62); --panel: oklch(0.23 0.02 62); --line: oklch(0.39 0.025 66); --amber: oklch(0.79 0.15 73); --red: oklch(0.7 0.17 28); }
+    * { box-sizing: border-box; } body { margin: 0; min-width: 320px; background: var(--canvas); color: var(--ink); font: 14px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    header { min-height: 76px; display: flex; align-items: center; justify-content: space-between; padding: 18px clamp(18px, 4vw, 56px); border-bottom: 1px solid var(--line); }
+    h1, h2, p { margin: 0; } h1 { font: 700 24px/1 system-ui, sans-serif; letter-spacing: 0; } h1 span { color: var(--amber); } h2 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    main { padding: 22px clamp(18px, 4vw, 56px) 42px; display: grid; gap: 22px; } .setup { display: grid; grid-template-columns: minmax(240px, .8fr) minmax(300px, 1.2fr); gap: 22px; }
+    section { border: 1px solid var(--line); background: var(--panel); padding: 18px; border-radius: 6px; } .section-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+    label { display: grid; gap: 6px; color: var(--muted); margin: 10px 0; } input, textarea, button { font: inherit; } input, textarea { width: 100%; color: var(--ink); background: oklch(0.16 0.014 62); border: 1px solid var(--line); border-radius: 4px; padding: 9px; } textarea { min-height: 104px; resize: vertical; }
+    button { background: var(--amber); color: oklch(0.2 0.02 65); border: 0; border-radius: 4px; padding: 9px 12px; font-weight: 700; cursor: pointer; } button.secondary { background: transparent; color: var(--amber); border: 1px solid var(--amber); } button:disabled { opacity: .45; cursor: wait; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; } .meta { color: var(--muted); overflow-wrap: anywhere; } .decision { color: var(--amber); font-weight: 800; }
+    .workspace { display: grid; gap: 22px; grid-template-columns: repeat(3, minmax(0, 1fr)); } .pane { min-height: 300px; display: grid; grid-template-rows: auto 1fr; gap: 12px; } pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; color: var(--ink); }
+    .feed { display: grid; gap: 0; padding: 0; } .feed .section-head { padding: 18px; margin: 0; border-bottom: 1px solid var(--line); } #receipts { max-height: 270px; overflow: auto; } .receipt { padding: 12px 18px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 16px; } .receipt:last-child { border-bottom: 0; }
+    #notice { min-height: 20px; color: var(--muted); } .error { color: var(--red); }
+    @media (max-width: 860px) { .setup, .workspace { grid-template-columns: 1fr; } header { align-items: flex-start; gap: 14px; flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <header><div><h1>Privilege <span>/ local preflight</span></h1><p class="meta">Engagement facts stay local. OpenAI receives sanitized payloads only.</p></div><div id="ledger" class="meta">Ledger: 0</div></header>
+  <main>
+    <div id="notice" role="status">Create an engagement, import a local note, then run a preflight.</div>
+    <div class="setup">
+      <section><div class="section-head"><h2>Engagement</h2><span id="engagement-id" class="meta">not created</span></div>
+        <label>Name<input id="name" value="Harborline Retail"></label>
+        <label>Policy JSON<textarea id="policy">{"protected_values":["Harborline Retail","North Coast"],"aliases":{},"abstract_rules":["[VALUE_1] withdrawal from [VALUE_2] is protected"],"allowed_purpose":"operating review"}</textarea></label>
+        <button id="create">Create engagement</button>
+      </section>
+      <section><div class="section-head"><h2>Local document</h2><span id="document-id" class="meta">not imported</span></div>
+        <label>Title<input id="title" value="Operating note"></label>
+        <label>Raw local text<textarea id="raw">Harborline Retail has a smaller North Coast footprint. North Coast store margins are declining.</textarea></label>
+        <label>Task<input id="task" value="Draft a withdrawal timetable for affected stores."></label>
+        <div class="actions"><button id="import">Import locally</button><button id="preflight" class="secondary">Preflight</button><button id="analyze">Analyze allowed payload</button></div>
+      </section>
+    </div>
+    <div class="workspace">
+      <section class="pane"><h2>Raw, local only</h2><pre id="raw-view">No document imported.</pre></section>
+      <section class="pane"><h2>Sanitized candidate</h2><pre id="sanitized">Run preflight to inspect the outbound candidate.</pre></section>
+      <section class="pane"><h2>Restored local result</h2><pre id="restored">Analysis has not run.</pre></section>
+    </div>
+    <section class="feed"><div class="section-head"><h2>Receipts</h2><span id="decision" class="decision">Awaiting preflight</span></div><div id="receipts"><p class="meta" style="padding:18px">No receipts yet.</p></div></section>
+  </main>
+  <script>
+    const state = { engagementId: null, documentId: null, raw: "" };
+    const $ = id => document.getElementById(id);
+    const notice = (text, error=false) => { $("notice").textContent = text; $("notice").className = error ? "error" : ""; };
+    async function request(path, method="GET", body) { const response = await fetch(path, {method, headers: body ? {"Content-Type":"application/json"} : {}, body: body ? JSON.stringify(body) : undefined}); const data = await response.json(); if (!response.ok) throw new Error(data.error || "Request failed"); return data; }
+    async function refresh() { if (!state.engagementId) return; const [status, receipts] = await Promise.all([request(`/api/status?engagement=${encodeURIComponent(state.engagementId)}`), request(`/api/receipts?engagement=${encodeURIComponent(state.engagementId)}`)]); $("ledger").textContent = `Ledger: ${status.sanitized_disclosure_count}`; $("receipts").innerHTML = receipts.length ? receipts.map(r => `<div class="receipt"><span class="decision">${r.decision}</span><span class="meta">${r.created_at}</span></div>`).join("") : '<p class="meta" style="padding:18px">No receipts yet.</p>'; }
+    function requireIds() { if (!state.engagementId || !state.documentId) throw new Error("Create an engagement and import a document first."); }
+    $("create").onclick = async () => { try { const policy = JSON.parse($("policy").value); const data = await request("/api/engagements", "POST", {name: $("name").value, policy}); state.engagementId = data.engagement_id; $("engagement-id").textContent = data.engagement_id; notice("Engagement created locally."); await refresh(); } catch (error) { notice(error.message, true); } };
+    $("import").onclick = async () => { try { if (!state.engagementId) throw new Error("Create an engagement first."); state.raw = $("raw").value; const data = await request("/api/documents", "POST", {engagement_id: state.engagementId, title: $("title").value, raw_text: state.raw}); state.documentId = data.document_id; $("document-id").textContent = data.document_id; $("raw-view").textContent = state.raw; notice("Document imported into the local vault."); } catch (error) { notice(error.message, true); } };
+    async function run(path) { requireIds(); const data = await request(path, "POST", {engagement_id: state.engagementId, document_id: state.documentId, task: $("task").value}); const preflight = data.preflight || data; $("sanitized").textContent = preflight.final_payload || "Blocked before a sanitized payload could be formed."; $("decision").textContent = preflight.decision; if (data.analysis) $("restored").textContent = data.analysis.output || `Analysis blocked: ${data.analysis.error}`; await refresh(); notice(`${preflight.decision} receipt recorded.`); }
+    $("preflight").onclick = () => run("/api/preflight").catch(error => notice(error.message, true));
+    $("analyze").onclick = () => run("/api/analyze").catch(error => notice(error.message, true));
+  </script>
+</body>
+</html>
