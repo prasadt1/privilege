@@ -37,8 +37,9 @@ For each request, on your machine:
    engagement's abstract rules (which themselves carry no real names).
 4. **Allow, Transform, or Block**, and write an inspectable **receipt** of what
    was inferred, what was matched, and what was actually transmitted.
-5. On Allow, GPT-5.6 does the real work on the sanitized text; the answer is
-   **restored to real names locally**.
+5. On Allow, you get the **verified-safe document** to use with any AI tool
+   yourself, and restore the real names locally from the reply — or let
+   Privilege run the analysis and hand back the restored answer.
 
 GPT-5.6 is the measuring instrument. The threat you are defending against is
 frontier-model inference, so the only honest way to measure the risk is to
@@ -63,7 +64,7 @@ git clone https://github.com/prasadt1/privilege
 cd privilege
 python3.11 -m venv .venv          # 3.11+ required
 .venv/bin/pip install -e ".[dev,files]"
-.venv/bin/python -m pytest -q     # expect: 76 passed
+.venv/bin/python -m pytest -q     # expect: 78 passed
 ```
 
 **See real GPT-5.6 results with no key and no spend.** A prefilled vault from a
