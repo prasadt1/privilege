@@ -131,9 +131,8 @@ const browser = await launch();
   });
   console.log('wrote viewer-three-column.png');
 
-  const setup = page.locator('.setup > section').first();
-  await setup.screenshot({ path: join(MEDIA, 'policy-form.png') });
-  console.log('wrote policy-form.png');
+  // policy-form.png is rendered from policy-form-card.html (landscape article card)
+  // via capture-architecture.mjs — not cropped from this tall UI column.
 
   // Expand strongest Transform receipt
   const receipts = page.locator('details.receipt');

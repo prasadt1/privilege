@@ -42,4 +42,6 @@ await shot(browser, 'architecture.html', 'architecture.png', { width: 1440, heig
 await shot(browser, 'consultant-workflow.html', 'consultant-workflow-a.png', { width: 1440, height: 1200 });
 await shot(browser, 'consultant-workflow-b.html', 'consultant-workflow.png', { width: 1440, height: 1200 });
 await shot(browser, 'consultant-workflow-b.html', 'consultant-workflow-b.png', { width: 1440, height: 1200 });
+// Landscape policy card for the article (avoids tall portrait scroll from UI crop)
+await shot(browser, 'policy-form-card.html', 'policy-form.png', { width: 1440, height: 900 });
 await browser.close();

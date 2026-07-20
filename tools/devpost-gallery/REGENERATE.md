@@ -42,7 +42,9 @@ cd tools/devpost-gallery
 node capture-ui.mjs
 # → docs/media/viewer-three-column.png
 # → docs/media/receipt-expanded.png
-# → docs/media/policy-form.png
+
+# policy-form.png is a landscape article card (same content, less scroll):
+node capture-architecture.mjs   # also refreshes architecture + workflow
 ```
 
 ## Gallery index
