@@ -7,7 +7,9 @@ same PNGs to the Devpost image gallery with the titles below.
 
 | File | Gallery title | Caption |
 |------|---------------|---------|
-| `consultant-workflow.png` | Consultant workflow | Import once, ask many times: local vault → policy → GPT-5.6 preflight → Allow / Transform / Block → restored answer. Optional MCP path never hands raw files to the agent. |
+| `consultant-workflow.png` | Consultant workflow | **Shipped (visual B).** Icon rail + short labels; masking chip shows `Northwind… → [VALUE_1]…`. Complements prose; distinct from architecture.png. |
+| `consultant-workflow-a.png` | Consultant workflow (text A, archive) | Text-forward six steps — kept for reference; not embedded in the story. |
+| `consultant-workflow-b.png` | Consultant workflow (visual B, alias) | Same render as `consultant-workflow.png`. |
 | `architecture.png` | Trust boundary | Raw documents, the vault, and restored output stay on the laptop. OpenAI receives only sanitized text, abstract rules, and prior sanitized payloads. |
 | `viewer-three-column.png` | Three columns: local, sent, restored | Left never leaves the machine; middle is exactly what OpenAI receives; right is restored locally. Every decision writes a receipt. |
 | `receipt-expanded.png` | Receipt: GPT-5.6 inferences on the mosaic turn | Prior disclosures climb; on the Transform turn the attacker re-identifies the corridor by description. Nothing staged — committed live vault. |
