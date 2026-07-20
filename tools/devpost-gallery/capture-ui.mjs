@@ -162,18 +162,5 @@ const browser = await launch();
   await page.close();
 }
 
-// --- Eval table ---
-{
-  const page = await browser.newPage({
-    viewport: { width: 1100, height: 640 },
-    deviceScaleFactor: 2,
-  });
-  await page.goto('file://' + join(__dirname, 'eval-table.html'));
-  await page.waitForTimeout(150);
-  await page.locator('#frame').screenshot({ path: join(MEDIA, 'eval-table.png') });
-  console.log('wrote eval-table.png');
-  await page.close();
-}
-
 await browser.close();
 console.log('done →', MEDIA);

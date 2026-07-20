@@ -26,7 +26,7 @@ No separate data-flow diagram: the trust-boundary architecture already shows
 what crosses to OpenAI. The workflow diagram is the Work & Productivity story
 (how a consultant uses Privilege day-to-day).
 
-## UI + eval captures
+## UI captures
 
 Start the local viewer against the committed live-run vault (separate terminal):
 
@@ -43,11 +43,7 @@ node capture-ui.mjs
 # → docs/media/viewer-three-column.png
 # → docs/media/receipt-expanded.png
 # → docs/media/policy-form.png
-# → docs/media/eval-table.png
 ```
-
-Do **not** re-run the live eval to refresh `eval-table.png` — numbers are
-frozen from `eval/results.live.json` / SUBMISSION.md.
 
 ## Gallery index
 
