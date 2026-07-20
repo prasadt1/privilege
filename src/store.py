@@ -65,10 +65,20 @@ class VaultStore:
         self._connection.close()
 
     def _write(self, sql: str, params: tuple[Any, ...]) -> None:
-        """Execute and commit one statement under the write lock."""
+        """Execute and commit one statement under the shared lock."""
         with self._lock:
             self._connection.execute(sql, params)
             self._connection.commit()
+
+    def _read(self, sql: str, params: tuple[Any, ...] = ()) -> list[sqlite3.Row]:
+        """Read under the same lock as writes.
+
+        One connection is shared across the threaded local viewer. Reading
+        while another thread commits on that connection raises InterfaceError
+        or returns a torn row, so reads are serialized too.
+        """
+        with self._lock:
+            return self._connection.execute(sql, params).fetchall()
 
     def _create_schema(self) -> None:
         self._connection.executescript(
@@ -111,7 +121,8 @@ class VaultStore:
         return engagement_id
 
     def get_engagement(self, engagement_id: str) -> Engagement:
-        row = self._connection.execute("SELECT * FROM engagements WHERE id = ?", (engagement_id,)).fetchone()
+        rows = self._read("SELECT * FROM engagements WHERE id = ?", (engagement_id,))
+        row = rows[0] if rows else None
         if row is None:
             raise UnknownEngagementError(f"unknown engagement id: {engagement_id}")
         return Engagement(row["id"], row["name"], EngagementPolicy.from_dict(json.loads(row["policy_json"])), row["created_at"])
@@ -126,7 +137,8 @@ class VaultStore:
         return document_id
 
     def get_document(self, document_id: str) -> Document:
-        row = self._connection.execute("SELECT * FROM documents WHERE id = ?", (document_id,)).fetchone()
+        rows = self._read("SELECT * FROM documents WHERE id = ?", (document_id,))
+        row = rows[0] if rows else None
         if row is None:
             raise UnknownDocumentError(f"unknown document id: {document_id}")
         return Document(row["id"], row["engagement_id"], row["title"], row["raw_text"], row["created_at"])
@@ -134,7 +146,7 @@ class VaultStore:
     def list_documents(self, engagement_id: str) -> list[dict[str, str]]:
         """List local document metadata without returning raw document text."""
         self.get_engagement(engagement_id)
-        rows = self._connection.execute(
+        rows = self._read(
             "SELECT id, engagement_id, title, created_at FROM documents WHERE engagement_id = ? ORDER BY created_at, id",
             (engagement_id,),
         )
@@ -149,7 +161,7 @@ class VaultStore:
 
     def get_mappings(self, engagement_id: str) -> dict[str, str]:
         self.get_engagement(engagement_id)
-        rows = self._connection.execute(
+        rows = self._read(
             "SELECT real_value, placeholder FROM mappings WHERE engagement_id = ?", (engagement_id,)
         )
         return {row["real_value"]: row["placeholder"] for row in rows}
@@ -171,7 +183,7 @@ class VaultStore:
             query += " AND destination = ?"
             params += (destination,)
         query += " ORDER BY created_at, id"
-        return [dict(row) for row in self._connection.execute(query, params)]
+        return [dict(row) for row in self._read(query, params)]
 
     def save_receipt(self, engagement_id: str, decision: str, payload_json: dict[str, Any] | str) -> str:
         self.get_engagement(engagement_id)
@@ -184,14 +196,15 @@ class VaultStore:
         return receipt_id
 
     def get_receipt(self, receipt_id: str) -> dict[str, str]:
-        row = self._connection.execute("SELECT * FROM receipts WHERE id = ?", (receipt_id,)).fetchone()
+        rows = self._read("SELECT * FROM receipts WHERE id = ?", (receipt_id,))
+        row = rows[0] if rows else None
         if row is None:
             raise ValueError(f"unknown receipt id: {receipt_id}")
         return dict(row)
 
     def list_receipts(self, engagement_id: str) -> list[dict[str, str]]:
         self.get_engagement(engagement_id)
-        rows = self._connection.execute(
+        rows = self._read(
             "SELECT * FROM receipts WHERE engagement_id = ? ORDER BY created_at DESC, id DESC",
             (engagement_id,),
         )
