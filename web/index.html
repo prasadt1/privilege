@@ -25,12 +25,16 @@
     .filebtn { display: inline-flex; align-items: center; background: transparent; color: var(--amber); border: 1px solid var(--amber); border-radius: 4px; padding: 9px 12px; font-weight: 700; cursor: pointer; margin: 0; }
     .preview { margin: 16px 0 4px; padding: 12px 14px; background: oklch(0.16 0.014 62); border: 1px solid var(--line); border-radius: 4px; }
     .preview h2 { margin-bottom: 8px; } .preview pre { color: var(--muted); font-size: 13px; }
+    .status { display: grid; gap: 4px; justify-items: end; text-align: right; }
+    .mode { font-weight: 700; } .mode.live { color: var(--amber); } .mode.mock { color: var(--muted); } .mode.unconfigured { color: var(--red); }
+    #mode-detail { color: var(--muted); font-size: 12px; max-width: 46ch; }
+    @media (max-width: 860px) { .status { justify-items: start; text-align: left; } #mode-detail { max-width: none; } }
     #notice { min-height: 20px; color: var(--muted); } .error { color: var(--red); }
     @media (max-width: 860px) { .setup, .workspace { grid-template-columns: 1fr; } header { align-items: flex-start; gap: 14px; flex-direction: column; } }
   </style>
 </head>
 <body>
-  <header><div><h1>Privilege <span>/ local preflight</span></h1><p class="meta">Engagement facts stay local. OpenAI receives sanitized payloads only.</p></div><div id="ledger" class="meta">Ledger: 0</div></header>
+  <header><div><h1>Privilege <span>/ local preflight</span></h1><p class="meta">Engagement facts stay local. OpenAI receives sanitized payloads only.</p></div><div class="status"><div id="mode" class="mode">checking mode...</div><div id="mode-detail"></div><div id="ledger" class="meta">Sent to OpenAI so far: 0</div></div></header>
   <main>
     <div id="notice" role="status">Start at step 1. Each ask you send builds on what OpenAI has already seen.</div>
     <div class="setup">
@@ -193,6 +197,14 @@
       event.target.value = "";
     };
     applyTemplate("restructuring");
+    (async () => {
+      try {
+        const mode = await request("/api/mode");
+        $("mode").textContent = mode.label;
+        $("mode").className = `mode ${mode.mode}`;
+        $("mode-detail").textContent = mode.detail;
+      } catch { $("mode").textContent = "mode unknown"; }
+    })();
     const esc = value => String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
     function receiptCard(r) {
       const p = r.payload_json || {};

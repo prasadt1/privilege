@@ -40,6 +40,8 @@ class PrivilegeHandler(BaseHTTPRequestHandler):
                 self._send_json(self.service.list_documents(_query_value(parsed.query, "engagement")))
             elif parsed.path == "/api/receipts":
                 self._send_json(self.service.list_receipts(_query_value(parsed.query, "engagement")))
+            elif parsed.path == "/api/mode":
+                self._send_json(_runtime_mode())
             else:
                 self._send_json({"error": "not found"}, HTTPStatus.NOT_FOUND)
         except (ValueError, KeyError, json.JSONDecodeError) as error:
@@ -116,6 +118,33 @@ class PrivilegeHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+
+def _runtime_mode() -> dict[str, str]:
+    """Describe which client the next check will use.
+
+    Reports only whether a credential is present, never any part of its value.
+    Without this the two silent-looking states are indistinguishable: mock mode
+    allows everything because the mock infers nothing, and a missing key blocks
+    everything because a failed check must fail closed.
+    """
+    if os.environ.get("PRIVILEGE_MOCK") == "1":
+        return {
+            "mode": "mock",
+            "label": "Mock, offline",
+            "detail": "No API key is used and nothing is sent. The mock infers nothing, so every check returns Allow.",
+        }
+    if os.environ.get("OPENAI_API_KEY"):
+        return {
+            "mode": "live",
+            "label": f"Live, {os.environ.get('PRIVILEGE_MODEL', 'gpt-5.6')}",
+            "detail": "Sanitized payloads are sent to OpenAI and attacked by the model before release.",
+        }
+    return {
+        "mode": "unconfigured",
+        "label": "No API key",
+        "detail": "Checks will Block because the attacker cannot run. Set OPENAI_API_KEY, or restart with PRIVILEGE_MOCK=1 to explore offline.",
+    }
 
 
 def _query_value(query: str, name: str) -> str:
