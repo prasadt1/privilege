@@ -11,6 +11,7 @@ import subprocess
 import sys
 from typing import Any
 
+from .intake import SUPPORTED_SUFFIXES, extract_text
 from .service import PrivilegeService
 from .store import DEFAULT_DB_PATH, VaultStore
 
@@ -29,7 +30,7 @@ def main(argv: list[str] | None = None) -> int:
             policy = json.loads(args.policy_file.read_text())
             _print({"engagement_id": service.create_engagement(args.name, policy)})
         elif args.command == "import":
-            document_id = service.import_document(args.engagement, args.file.name, args.file.read_text())
+            document_id = service.import_document(args.engagement, args.file.name, extract_text(args.file))
             _print({"document_id": document_id})
         elif args.command == "preflight":
             result = service.preflight(args.engagement, args.document, args.task)
@@ -64,7 +65,9 @@ def _parser() -> argparse.ArgumentParser:
 
     import_document = commands.add_parser("import", help="import a local UTF-8 text document")
     import_document.add_argument("--engagement", required=True)
-    import_document.add_argument("--file", type=Path, required=True)
+    import_document.add_argument(
+        "--file", type=Path, required=True, help=f"local file ({', '.join(SUPPORTED_SUFFIXES)}), extracted on this machine"
+    )
 
     for name in ("preflight", "analyze"):
         command = commands.add_parser(name, help=f"{name} a local document")

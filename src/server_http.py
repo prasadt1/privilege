@@ -7,14 +7,17 @@ read API; the page holds the text supplied during its local import action.
 from __future__ import annotations
 
 import argparse
+import base64
 from dataclasses import asdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
+import tempfile
 from urllib.parse import parse_qs, urlparse
 
+from .intake import DocumentExtractionError, ensure_supported, extract_text
 from .service import PrivilegeService
 from .store import DEFAULT_DB_PATH, VaultStore
 
@@ -50,6 +53,12 @@ class PrivilegeHandler(BaseHTTPRequestHandler):
             elif self.path == "/api/documents":
                 document_id = self.service.import_document(body["engagement_id"], body["title"], body["raw_text"])
                 self._send_json({"document_id": document_id}, HTTPStatus.CREATED)
+            elif self.path == "/api/upload":
+                # The browser sends bytes; extraction still happens here, on
+                # this machine. Nothing is forwarded anywhere.
+                text = self._extract_upload(body["filename"], body["content_base64"])
+                document_id = self.service.import_document(body["engagement_id"], body["filename"], text)
+                self._send_json({"document_id": document_id, "raw_text": text}, HTTPStatus.CREATED)
             elif self.path == "/api/preflight":
                 result = self.service.preflight(body["engagement_id"], body["document_id"], body["task"])
                 self._send_json(asdict(result))
@@ -68,6 +77,27 @@ class PrivilegeHandler(BaseHTTPRequestHandler):
     def _body(self) -> dict[str, object]:
         length = int(self.headers.get("Content-Length", "0"))
         return json.loads(self.rfile.read(length))
+
+    @staticmethod
+    def _extract_upload(filename: str, content_base64: str) -> str:
+        """Write the upload to a temp file, extract locally, then delete it."""
+        suffix = ensure_supported(filename)
+        try:
+            raw = base64.b64decode(content_base64, validate=True)
+        except Exception as error:
+            raise DocumentExtractionError("upload was not valid base64") from error
+
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as handle:
+            handle.write(raw)
+            temporary = Path(handle.name)
+        try:
+            return extract_text(temporary)
+        except (DocumentExtractionError, ValueError) as error:
+            # Report the operator's filename, never the temporary path.
+            detail = str(error).replace(str(temporary), filename).replace(temporary.name, filename)
+            raise DocumentExtractionError(detail) from error
+        finally:
+            temporary.unlink(missing_ok=True)
 
     def _send_json(self, data: object, status: HTTPStatus = HTTPStatus.OK) -> None:
         self._send_bytes(json.dumps(data, indent=2).encode(), "application/json; charset=utf-8", status)

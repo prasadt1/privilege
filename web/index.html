@@ -37,6 +37,8 @@
         <div class="load-row"><input id="load-id" placeholder="eng_... from a saved vault"><button id="load" class="secondary">Load existing</button></div>
       </section>
       <section><div class="section-head"><h2><span class="step">2.</span> Add a document, then ask</h2><span id="document-id" class="meta">not imported</span></div>
+        <label>Upload a file, read on this machine only<input id="file" type="file" accept=".txt,.md,.pdf,.docx"></label>
+        <p class="hint">PDF, Word, text, and Markdown. Extraction runs locally, then the text appears below for you to check before anything is sent. Spreadsheets, slides, and scanned images are not supported yet.</p>
         <label>Title<input id="title" value="engagement_notes.txt"></label>
         <label>Document, never leaves this machine<textarea id="raw">Northwind Freight operates 14 depots. Baltic corridor volumes fell 22% year on year. Depot leases in that corridor expire in Q3. The board has not yet announced any change to the corridor.</textarea></label>
         <label>What you want to ask the model<input id="task" value="Summarize the depot cost structure."></label>
@@ -73,6 +75,24 @@
     $("create").onclick = async () => { try { const policy = JSON.parse($("policy").value); const data = await request("/api/engagements", "POST", {name: $("name").value, policy}); state.engagementId = data.engagement_id; $("engagement-id").textContent = data.engagement_id; notice("Engagement created locally."); await refresh(); } catch (error) { notice(error.message, true); } };
     $("import").onclick = async () => { try { if (!state.engagementId) throw new Error("Create an engagement first."); state.raw = $("raw").value; const data = await request("/api/documents", "POST", {engagement_id: state.engagementId, title: $("title").value, raw_text: state.raw}); state.documentId = data.document_id; $("document-id").textContent = data.document_id; $("raw-view").textContent = state.raw; notice("Document imported into the local vault."); } catch (error) { notice(error.message, true); } };
     async function run(path) { requireIds(); const data = await request(path, "POST", {engagement_id: state.engagementId, document_id: state.documentId, task: $("task").value}); const preflight = data.preflight || data; $("sanitized").textContent = preflight.final_payload || "Blocked before a sanitized payload could be formed."; $("decision").textContent = preflight.decision; if (data.analysis) $("restored").textContent = data.analysis.output || `Analysis blocked: ${data.analysis.error}`; await refresh(); notice(`${preflight.decision} receipt recorded.`); }
+    $("file").onchange = async event => {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        if (!state.engagementId) throw new Error("Create or load an engagement first.");
+        notice(`Reading ${file.name} locally...`);
+        const buffer = await file.arrayBuffer();
+        let binary = ""; const bytes = new Uint8Array(buffer);
+        for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+        const data = await request("/api/upload", "POST", {engagement_id: state.engagementId, filename: file.name, content_base64: btoa(binary)});
+        state.documentId = data.document_id; state.raw = data.raw_text;
+        $("document-id").textContent = data.document_id;
+        $("title").value = file.name;
+        $("raw").value = data.raw_text;
+        $("raw-view").textContent = data.raw_text;
+        notice(`Extracted ${data.raw_text.length} characters from ${file.name}. Nothing has been sent yet.`);
+      } catch (error) { notice(error.message, true); event.target.value = ""; }
+    };
     $("load").onclick = async () => { try { const id = $("load-id").value.trim(); if (!id) throw new Error("Paste an engagement id first."); state.engagementId = id; const documents = await request(`/api/documents?engagement=${encodeURIComponent(id)}`); if (documents.length) { state.documentId = documents[0].id; $("document-id").textContent = documents[0].id; } $("engagement-id").textContent = id; await refresh(); notice(`Loaded ${id}. Receipts below are from an earlier run.`); } catch (error) { state.engagementId = null; notice(error.message, true); } };
     $("preflight").onclick = () => run("/api/preflight").catch(error => notice(error.message, true));
     $("analyze").onclick = () => run("/api/analyze").catch(error => notice(error.message, true));
