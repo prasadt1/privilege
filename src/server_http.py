@@ -44,6 +44,10 @@ class PrivilegeHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "not found"}, HTTPStatus.NOT_FOUND)
         except (ValueError, KeyError, json.JSONDecodeError) as error:
             self._send_json({"error": str(error)}, HTTPStatus.BAD_REQUEST)
+        except Exception as error:
+            # A handler that dies sends no response at all, which the browser
+            # reports as an unexplained failure. Always answer.
+            self._send_json({"error": f"{type(error).__name__}: {error}"}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def do_POST(self) -> None:  # noqa: N802
         try:
@@ -70,6 +74,10 @@ class PrivilegeHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "not found"}, HTTPStatus.NOT_FOUND)
         except (ValueError, KeyError, json.JSONDecodeError) as error:
             self._send_json({"error": str(error)}, HTTPStatus.BAD_REQUEST)
+        except Exception as error:
+            # A handler that dies sends no response at all, which the browser
+            # reports as an unexplained failure. Always answer.
+            self._send_json({"error": f"{type(error).__name__}: {error}"}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def log_message(self, format: str, *args: object) -> None:
         """Keep local operator output focused on explicit startup messages."""

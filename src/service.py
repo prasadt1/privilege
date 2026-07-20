@@ -6,7 +6,7 @@ import json
 from typing import Any
 
 from .analyze import AnalysisResult, analyze_after_preflight
-from .openai_client import client_from_environment
+from .openai_client import PreflightError, client_from_environment
 from .policy import EngagementPolicy
 from .preflight import PreflightResult, run_preflight
 from .store import DEFAULT_DB_PATH, VaultStore
@@ -36,7 +36,23 @@ class PrivilegeService:
         return self.store.import_document(engagement_id, title, raw_text)
 
     def preflight(self, engagement_id: str, document_id: str, task: str) -> PreflightResult:
-        return run_preflight(engagement_id, document_id, task, self.store, self.client)
+        try:
+            client = self.client
+        except PreflightError as error:
+            # Resolving the client is part of the check. Failing to build one
+            # is a failure to check, which must Block like any other error
+            # rather than escape as an exception.
+            return self._blocked_before_check(engagement_id, document_id, type(error).__name__)
+        return run_preflight(engagement_id, document_id, task, self.store, client)
+
+    def _blocked_before_check(self, engagement_id: str, document_id: str, error: str) -> PreflightResult:
+        result = PreflightResult(engagement_id, document_id, "Block", "", "", 0, [], [], 0, error)
+        try:
+            self.store.save_receipt(engagement_id, result.decision, result.receipt_payload())
+        except Exception:
+            # An unknown engagement cannot carry a receipt. The Block stands.
+            pass
+        return result
 
     def analyze(self, preflight: PreflightResult) -> AnalysisResult:
         return analyze_after_preflight(preflight, self.store, self.client)
