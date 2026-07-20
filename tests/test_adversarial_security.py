@@ -328,3 +328,34 @@ def test_folding_preserves_unmatched_text_exactly(text):
     """Folding is for matching only; bytes outside a match are returned as-is."""
     out = sanitize(text, {"Acme Corp": "[V1]"}).text
     assert out.replace("[V1]", "Acme Corp") == text
+
+
+@pytest.mark.parametrize(
+    "label,text",
+    [
+        ("hangul-filler", "AcmeㅤCorp is exiting"),
+        ("hangul-jungseong", "AcmeᅠCorp is exiting"),
+        ("braille-blank", "Acme⠀Corp is exiting"),
+    ],
+)
+def test_invisible_filler_separators_are_masked(label, text):
+    """Pass-2 regression: invisible letters/symbols used as a word separator.
+    These render blank but escape category-based stripping, so they are in a
+    bounded explicit set."""
+    out = sanitize(text, {"Acme Corp": "[V1]"}).text
+    assert "[V1]" in out, f"{label} leaked: {out!r}"
+
+
+@pytest.mark.parametrize(
+    "label,text",
+    [
+        ("leading-fullwidth", "Ｎorthwind exit"),
+        ("trailing-fullwidth", "Northwinｄ exit"),
+    ],
+)
+def test_expansion_glyph_at_value_boundary_is_masked(label, text):
+    """Pass-2 regression: a multi-mapping glyph at the start or end of the value
+    once made the alignment guard skip a real match. One-to-one folding removes
+    the guard and the leak."""
+    out = sanitize(text, {"Northwind": "[V1]"}).text
+    assert "[V1]" in out, f"{label} leaked: {out!r}"

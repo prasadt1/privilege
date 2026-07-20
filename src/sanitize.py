@@ -44,6 +44,14 @@ CARD_RE = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}\d(?!\d)")
 # in the README.
 _STRIP_CATEGORIES = frozenset({"Cf", "Mn", "Mc", "Me"})
 
+# Invisible characters that are not caught by category: Hangul fillers and the
+# blank Braille cell render as empty width but are letters or symbols, so they
+# slip a name's words apart without a category flag. This is the bounded set of
+# genuinely invisible code points, not an open homoglyph list.
+_INVISIBLE = frozenset("ᅟᅠㅤﾠ⠀⁥") | frozenset(
+    chr(c) for c in range(0xFFF0, 0xFFF9)
+)
+
 _CONFUSABLES = {
     # Cyrillic
     "А": "A", "В": "B", "Е": "E", "К": "K", "М": "M", "Н": "H", "О": "O",
@@ -84,24 +92,32 @@ def _latin_letter_from_name(char: str) -> str:
 
 
 def _fold_char(char: str) -> str:
-    """Reduce one character to the letter a reader would recognise it as.
+    """Reduce one character to the single letter a reader would recognise.
 
     Returns "" for a character that carries no readable letter (an invisible
-    format character or a combining mark), otherwise the folded letters.
+    format character, a combining mark, or a filler), otherwise exactly one
+    character. Folding one source character to at most one folded character
+    keeps a strict positional map between the two strings, so a match can never
+    begin or end inside a decomposition and splice away text that was not part
+    of the name.
     """
     category = unicodedata.category(char)
-    if category in _STRIP_CATEGORIES:
+    if category in _STRIP_CATEGORIES or char in _INVISIBLE:
         return ""
     if category == "Cc" and char not in "\t\n\r\f\v":
         return ""
     if char in _CONFUSABLES:
         return _CONFUSABLES[char]
-    # NFKD turns fullwidth and accented letters into a base letter plus marks;
-    # the marks are dropped as combining characters on the recursion.
-    decomposed = unicodedata.normalize("NFKD", char)
-    if decomposed != char:
-        return "".join(_fold_char(component) for component in decomposed)
-    return _latin_letter_from_name(char) or char
+    # NFKD turns fullwidth and accented letters into a base letter plus marks.
+    # Keep the first base letter and drop the marks, so the result is one
+    # character. Multi-letter expansions (ligatures, unit symbols) are not a
+    # name-hiding vector and collapse to their first letter.
+    for component in unicodedata.normalize("NFKD", char):
+        if unicodedata.category(component) not in _STRIP_CATEGORIES:
+            if component != char:
+                return _fold_char(component)
+            return _latin_letter_from_name(char) or char
+    return ""
 
 
 def _fold(text: str) -> tuple[str, list[int]]:
@@ -159,17 +175,10 @@ def _mask_value(text: str, real_value: str, placeholder: str) -> tuple[str, int]
     cursor = 0
     count = 0
     for match in _value_pattern(real_value).finditer(folded):
-        lo, hi = match.start(), match.end()
-        # Require the match to begin and end on a source-character boundary. A
-        # single glyph can fold to several characters (℃ -> "°C"); matching part
-        # of one and splicing the whole glyph would delete the rest, e.g. the
-        # degree sign. Skip a match that starts or ends inside an expansion.
-        if lo > 0 and source_index[lo] == source_index[lo - 1]:
-            continue
-        if hi < len(source_index) and source_index[hi] == source_index[hi - 1]:
-            continue
-        start = source_index[lo]
-        end = source_index[hi - 1] + 1
+        # Folding is one-to-one, so each folded index maps to exactly one source
+        # character and the span covers whole source characters only.
+        start = source_index[match.start()]
+        end = source_index[match.end() - 1] + 1
         if start < cursor:
             # Overlapping spans cannot both be replaced; keep the first.
             continue

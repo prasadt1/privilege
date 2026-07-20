@@ -63,7 +63,7 @@ git clone https://github.com/prasadt1/privilege
 cd privilege
 python3.11 -m venv .venv          # 3.11+ required
 .venv/bin/pip install -e ".[dev,files]"
-.venv/bin/python -m pytest -q     # expect: 71 passed
+.venv/bin/python -m pytest -q     # expect: 76 passed
 ```
 
 **See real GPT-5.6 results with no key and no spend.** A prefilled vault from a
@@ -163,27 +163,35 @@ PRIVILEGE_MODEL=gpt-5.6-terra .venv/bin/python eval/run.py --live --output eval/
 
 ## Masking limits
 
-The masker is tested against realistic and adversarial input, and it fails
-closed. The tested boundaries:
+Privilege is two layers. Local masking is layer one, deterministic and
+best-effort. The cumulative GPT-5.6 attack is layer two, and it is the
+load-bearing control: it reads the sanitized candidate the way the frontier
+model will and refuses to proceed if the client is inferable. A name that slips
+past the masker in readable form is exactly what the attacker is there to catch,
+because the model reads a lookalike as the real name.
 
-- **Handled:** case differences, extra whitespace, line breaks (as PDF
-  extraction produces), run-together words, fullwidth and accented forms,
-  invisible and formatting characters (zero-width, bidi, tag block), combining
-  marks, and common Cyrillic, Greek, Armenian, Cherokee, Coptic, and Latin-block
-  lookalike letters.
-- **Known residual:** exhaustive Unicode homoglyph coverage would require the
-  full Unicode confusables data set; a document that deliberately embeds an
-  exotic lookalike not in the table can still carry a declared name through.
-  Folding is category based for invisibles and marks (complete for those
-  classes) and table based for cross-script letters (a broad subset).
-- **By design, not a bug:** a proper noun written into an *abstract rule* that
-  is not on the protected list is sent as written. The web UI warns when a
-  capitalised term in a rule is not protected. Only the values you declare are
-  masked.
+The masker was hardened across two adversarial review passes (each a fan-out of
+independent attackers, every claimed break re-verified). Where it stands:
 
-The load-bearing control is the cumulative GPT-5.6 attack over the policy; local
-masking is the first layer, not the whole defense. Findings from two adversarial
-review passes drove the current boundaries.
+- **Handled, and regression-tested:** case, extra whitespace, line breaks (as
+  PDF extraction produces them), run-together words, fullwidth and accented
+  forms, invisible and formatting characters (zero-width, bidi, tag block,
+  Hangul and Braille fillers), combining marks, and Cyrillic, Greek, Armenian,
+  Cherokee, Coptic, and Latin-block lookalike letters. Folding is one-to-one, so
+  masking never corrupts adjacent text, and text outside a match is returned
+  byte for byte (German, French, and CJK documents round-trip exactly).
+- **Known residual, by construction:** deterministic matching cannot be complete
+  against all of Unicode. A document that deliberately embeds an exotic lookalike
+  not in the confusables table (some Lisu letters, a digit substituted for a
+  letter, a rare phonetic glyph) can still carry a declared name through layer
+  one. Full coverage would need the Unicode confusables data set and would still
+  lag new code points. This residual is why layer two exists and is load-bearing.
+- **By design, not a bug:** a proper noun written into an *abstract rule* that is
+  not on the protected list is sent as written. The web UI warns when a
+  capitalised term in a rule is not protected. Only values you declare are masked.
+
+Everything fails closed: an unreadable file, a missing key, a malformed model
+response, or an exhausted repair round becomes Block, never a silent send.
 
 ---
 
