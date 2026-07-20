@@ -1,163 +1,224 @@
 # Privilege
 
-> **Pitch:** Existing tools protect identities. This one protects engagement
-> confidentiality — cumulatively — before GPT-5.6 sees your next prompt.
+**Existing tools protect identities. Privilege protects engagement confidentiality — cumulatively — before GPT-5.6 sees your next prompt.**
 
-Local-first **engagement-policy confidentiality preflight** for consultants,
-freelancers, and architects. Raw client documents and identity mappings stay on
-your laptop. Before analysis, the tool:
+A local-first confidentiality preflight for consultants, freelancers, and
+architects who want AI help on client work without pasting raw client
+documents into a chatbot. Raw documents and the mapping from real names to
+placeholders stay on your machine. Before anything is sent, Privilege turns
+GPT-5.6 into a **blind attacker** against the sanitized text plus everything
+already disclosed in this engagement, and refuses to send if a protected
+business fact would become inferable.
 
-1. Masks declared values + simple PII locally
-2. Asks **GPT-5.6** to blind-infer claims from the sanitized candidate **plus**
-   prior sanitized disclosures already sent to OpenAI
-3. Matches those claims against your **abstract engagement rules**
-4. Returns **Allow / Transform / Block** and writes an inspectable **receipt**
-
-**Track:** OpenAI Build Week · Work & Productivity  
-**License:** Apache-2.0  
-**Name:** Privilege (chosen by author — protects engagement-confidential *facts*, not just named entities)
+**Track:** OpenAI Build Week, Work & Productivity · **License:** Apache-2.0
 
 ---
 
-## What this is NOT
+## The problem
 
-- Not anonymity, not cryptography, not a GDPR / HIPAA / DORA certification
-- Not a claim that “nothing sensitive ever reaches the cloud”
-- OpenAI still receives **sanitized** text and **abstract** policy rules
-- Only declared values + regex PII are masked before the attack; undeclared
-  secrets can still leak
+A consultant has a client PDF and wants an AI to summarise the risks in it.
+Two bad options today: paste the raw document into a chatbot (a confidentiality
+breach), or forgo the AI entirely (lose the leverage). Redaction tools address
+the first name-shaped fields, but the real leak is subtler. Three individually
+harmless questions can, together, let a capable model re-identify the client
+from context alone. That is the mosaic effect, and no entity-based redactor
+sees it coming.
 
-Honest boundary: *raw docs + mappings stay local; cumulative semantic leak risk
-on sanitized text is checked before send.*
+## What Privilege does
 
-The first implementation pass keeps the local vault, policy model, and
-sanitizer fully offline. `src/store.py` contains raw documents and mappings;
-`src/sanitize.py` performs deterministic masking and local restoration only.
-No module claims anonymity, regulatory compliance, or that sanitized payloads
-are non-sensitive.
+For each request, on your machine:
+
+1. **Mask locally.** Declared client values and simple PII are replaced with
+   placeholders. The raw text never leaves the device.
+2. **Attack with GPT-5.6.** The sanitized candidate, plus every sanitized
+   payload already sent in this engagement, is handed to GPT-5.6 with one job:
+   infer who and what this is about.
+3. **Judge against your policy.** Inferred claims are checked against your
+   engagement's abstract rules (which themselves carry no real names).
+4. **Allow, Transform, or Block**, and write an inspectable **receipt** of what
+   was inferred, what was matched, and what was actually transmitted.
+5. On Allow, GPT-5.6 does the real work on the sanitized text; the answer is
+   **restored to real names locally**.
+
+GPT-5.6 is the measuring instrument. The threat you are defending against is
+frontier-model inference, so the only honest way to measure the risk is to
+point a frontier model at the sanitized document and let it try. That is why
+the model is structurally load-bearing here, not decorative.
+
+## What Privilege is NOT
+
+- Not anonymity or cryptography, and not a GDPR / HIPAA / DORA certification.
+- Not a claim that nothing sensitive reaches the cloud. OpenAI receives
+  sanitized text, abstract rules, and prior sanitized payloads.
+- Not a replacement for client consent. It is a data-minimisation control.
+
+See **[Masking limits](#masking-limits)** for the specific, tested boundaries.
 
 ---
 
-## Quick start (judge path, no rebuild)
+## Quick start for judges (no API key, ~60 seconds)
 
 ```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-
-# Offline mosaic demo (deterministic mock attacker — no API key)
-python demo/seed.py --db /tmp/privilege.sqlite3 --run-demo --mock
-
-# Eval (baseline vs cumulative treatment)
-python eval/run.py
-# → eval/results.json
+git clone https://github.com/prasadt1/privilege
+cd privilege
+python3.11 -m venv .venv          # 3.11+ required
+.venv/bin/pip install -e ".[dev,files]"
+.venv/bin/python -m pytest -q     # expect: 71 passed
 ```
 
-Expected mock story (also in `eval/results.json`):
+**See real GPT-5.6 results with no key and no spend.** A prefilled vault from a
+live run ships in the repo:
 
-| Mode | Protected-fact leak recall (mock) |
-|---|---|
-| Baseline (per-prompt, no ledger) | low (~0.3) |
-| Treatment (cumulative preflight) | **1.0** |
+```bash
+.venv/bin/python -m src.server_http --db demo/demo-vault.sqlite3
+# open http://127.0.0.1:7077, paste the engagement id below into
+# "eng_... from a saved vault", and click "Load existing"
+.venv/bin/python -c "import sqlite3; print(list(sqlite3.connect('demo/demo-vault.sqlite3').execute('select id from engagements'))[0][0])"
+```
 
-Live GPT-5.6 (optional):
+The receipts feed shows four turns: three Allows with prior disclosures
+climbing 0, 1, 2, then a Transform at 3. Expand a receipt to read exactly what
+GPT-5.6 inferred, including the turn where it re-identifies the protected
+corridor **by description**, with no name present.
+
+**Run the offline flow yourself** (mock attacker, no key; note the mock infers
+nothing, so every decision is Allow by design):
+
+```bash
+.venv/bin/python demo/seed.py --mock
+```
+
+**Run it live** (needs `OPENAI_API_KEY`, costs a few cents):
 
 ```bash
 export OPENAI_API_KEY=sk-...
-# optional: export PRIVILEGE_MODEL=gpt-5.6
-python demo/seed.py --db /tmp/privilege-live.sqlite3 --live --run-demo
+PRIVILEGE_MODEL=gpt-5.6-terra .venv/bin/python demo/seed.py --live
 ```
 
-### CLI
+A full manual test pass is in **[TESTING.md](TESTING.md)**.
+
+---
+
+## Interfaces
+
+All three share one local service (`src/service.py`).
+
+**CLI**
 
 ```bash
-privilege --mock --db /tmp/privilege.sqlite3 list
-privilege --mock --db /tmp/privilege.sqlite3 status --engagement eng_...
-privilege --mock --db /tmp/privilege.sqlite3 preflight \
-  --engagement eng_... --document doc_... \
-  --task "Is an exit from the Nordics on the table?"
+privilege --mock init-engagement --name "My review" --policy-file policies/restructuring.json
+privilege --mock import   --engagement eng_... --file notes.pdf
+privilege --live preflight --engagement eng_... --document doc_... --task "Summarise the risks."
+privilege --live analyze   --engagement eng_... --document doc_... --task "Summarise the risks."
+privilege --mock status    --engagement eng_...
 ```
 
-### Local web UI
+Files accepted: `.txt`, `.md`, `.pdf`, `.docx`, extracted locally. Spreadsheets,
+slides, and scanned images are refused with a clear "not supported yet".
+
+**Local web UI** — `python -m src.server_http --db vault.sqlite3`, then
+`http://127.0.0.1:7077`. A policy form with templates (no raw JSON required), a
+live preview of exactly what the model would receive as policy, file upload, a
+three-column raw / sanitized / restored view, and the receipts feed. The header
+shows whether you are in Live, Mock, or unconfigured mode.
+
+**Thin MCP adapter** (optional) — `pip install -e ".[mcp]"`, then
+`python -m src.server_mcp`. Exposes `preflight`, `analyze`, `status`. It has
+**no** tool that returns raw text or mappings, by design.
+
+---
+
+## Evaluation
+
+Ten hand-authored scenarios ([`eval/scenarios.py`](eval/scenarios.py)) were
+frozen and committed **before** the runner and results. Each is a sequence of
+disclosures with a labelled expected decision. Two modes run over them: a
+`baseline` that checks each prompt independently, and the shipped `treatment`
+that checks cumulatively.
+
+One live GPT-5.6 run, published unchanged:
+
+| Metric | Baseline | Cumulative treatment |
+|---|---:|---:|
+| Protected-fact leak recall | 0.429 (3/7) | **0.571 (4/7)** |
+| False-block rate | 0.0 | 0.0 |
+| Task-fact retention | 1.0 | 1.0 |
+
+**Read this honestly.** The advantage is one turn across seven protected cases;
+seven cases cannot support a strong efficacy claim. Absolute recall of 0.571
+means the prototype **misses more than 40% of authored leaks**. What the result
+does show is directional and matters: cumulative checking caught more, at zero
+false blocks and full task-fact retention, so it did not "win" by blocking
+everything. The full method, the invalid first run that a fail-closed outage
+produced, and why the numbers are not re-rolled are in
+[`eval/README.md`](eval/README.md).
+
+Reproduce (needs a key):
 
 ```bash
-PRIVILEGE_MOCK=1 python -m src.server_http --db /tmp/privilege.sqlite3 --port 7077
-# open http://127.0.0.1:7077
+PRIVILEGE_MODEL=gpt-5.6-terra .venv/bin/python eval/run.py --live --output eval/results.live.json
 ```
 
-### Thin MCP adapter (optional)
+---
 
-```bash
-pip install -e ".[mcp]"
-PRIVILEGE_MOCK=1 python -m src.server_mcp --db /tmp/privilege.sqlite3
-```
+## Masking limits
 
-MCP tools: `preflight`, `analyze`, `status`, `list_documents`.  
-**No** raw import / mapping dump tools — setup stays on the CLI/UI side.
+The masker is tested against realistic and adversarial input, and it fails
+closed. The tested boundaries:
+
+- **Handled:** case differences, extra whitespace, line breaks (as PDF
+  extraction produces), run-together words, fullwidth and accented forms,
+  invisible and formatting characters (zero-width, bidi, tag block), combining
+  marks, and common Cyrillic, Greek, Armenian, Cherokee, Coptic, and Latin-block
+  lookalike letters.
+- **Known residual:** exhaustive Unicode homoglyph coverage would require the
+  full Unicode confusables data set; a document that deliberately embeds an
+  exotic lookalike not in the table can still carry a declared name through.
+  Folding is category based for invisibles and marks (complete for those
+  classes) and table based for cross-script letters (a broad subset).
+- **By design, not a bug:** a proper noun written into an *abstract rule* that
+  is not on the protected list is sent as written. The web UI warns when a
+  capitalised term in a rule is not protected. Only the values you declare are
+  masked.
+
+The load-bearing control is the cumulative GPT-5.6 attack over the policy; local
+masking is the first layer, not the whole defense. Findings from two adversarial
+review passes drove the current boundaries.
 
 ---
 
-## Demo arc (90s)
+## How this was built
 
-1. Seed the synthetic Helios engagement — show raw values local
-2. Three benign analyzes → Allow; ledger grows
-3. Fourth question completes a mosaic (“exit” + region + margin)
-4. Preflight **Blocks** (or Transforms then re-attacks)
-5. Open the receipt; flash baseline vs treatment eval table
+The core was built in **Codex with GPT-5.6** across four sessions: the vault and
+policy model, the deterministic sanitizer, the fail-closed preflight and repair
+loop with receipts, the OpenAI client, and the frozen evaluation harness. Every
+Python commit for that core is a Codex session; the build plan is in
+[`CODEX-SESSIONS.md`](CODEX-SESSIONS.md).
 
----
+After the Codex usage quota was exhausted, the remaining work was completed
+outside Codex and is disclosed plainly: file intake (`src/intake.py`), the
+policy form and mode indicator in the web UI, the demo seed script, the security
+hardening that followed two adversarial review passes, and this documentation.
+Files carrying that work say so in their own docstrings, and `git log` shows the
+split.
 
-## Architecture
+GPT-5.6 is used at runtime as the blind attacker and policy judge.
 
-```
-import (local) → sanitize (local) → GPT-5.6 blind infer (sanitized + ledger)
-     → GPT-5.6 match abstract rules → rewrite (≤2) → Allow|Transform|Block
-     → on Allow: GPT-5.6 analyze → local restore → ledger append + receipt
-```
+## Prior art
 
-Surfaces share `src/service.py`: CLI · local web · thin MCP.
+Privilege reimplements, for coding and consulting agents, the receipts-and-audit
+pattern the author first built in **Engram** (a different domain). No Engram code
+was copied. Related work in this space, disclosed because the pieces exist
+separately even though this composition does not:
+[Hey Jude](https://github.com/sure-scale/hey-jude) (re-identification critic and
+audit logs), [CAMP](https://github.com/aman-panjwani/camp) (cumulative PII
+exposure), PlanTwin (per-object disclosure budgets), and Microsoft Presidio
+(entity redaction, a commodity component here). Privilege's narrow claim is
+engagement-defined **semantic** facts, checked cumulatively, with receipts, for
+the solo practitioner.
 
----
+## Repository
 
-## Related work (disclosed)
-
-| Project | Overlap | Our narrow claim |
-|---|---|---|
-| [Hey Jude](https://github.com/sure-scale/hey-jude) | Re-id critic + audit logs | Engagement-defined **semantic** facts + cumulative ledger + solo surfaces |
-| [CAMP](https://github.com/aman-panjwani/camp) | Cumulative PII exposure | Semantic rules beyond entity types |
-| [PlanTwin](https://arxiv.org/abs/2603.18377) | Per-object disclosure budgets | Practitioner preflight with receipts |
-| SEMSIEDIT (arxiv 2602.21496) | Semantic sensitive rewrite | Cumulative engagement policy + eval |
-| Microsoft Presidio | Entity redaction | Commodity component; not the product |
-
-Conceptual prior art: the author's Engram project (receipts / audit patterns for
-a different domain). **No Engram code was copied.**
-
----
-
-## Codex + GPT-5.6
-
-Build Week requirement: core built with **Codex / GPT-5.6**. Paste prompts from
-[`CODEX-SESSIONS.md`](CODEX-SESSIONS.md). Capture `/feedback` Session ID from
-Session 1 early.
-
-Runtime: GPT-5.6 is the **attacker and policy judge** — structurally
-load-bearing, not decorative.
-
-> **Note for judges:** If any peripheral packaging landed outside Codex, the
-> video/README should say so honestly. Cited core sessions remain the Codex
-> thread IDs in the submission form.
-
----
-
-## Project layout
-
-See [`SPEC.md`](SPEC.md) and [`HANDOFF.md`](HANDOFF.md).
-
----
-
-## Author checklist
-
-- [x] Project name chosen: **Privilege**
-- [ ] Write Devpost description in your own voice ([`SUBMISSION.md`](SUBMISSION.md))
-- [ ] Create Devpost page early; paste `/feedback` Session ID
-- [ ] Record ≤3 min video narrating Codex + GPT-5.6 usage
+`src/` the service, `web/` the local UI, `eval/` the frozen evaluation,
+`demo/` the seed and prefilled vault, `policies/` example policies, `tests/`.
+Design in [`SPEC.md`](SPEC.md), manual test pass in [`TESTING.md`](TESTING.md).
