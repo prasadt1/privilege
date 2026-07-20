@@ -7,6 +7,10 @@ __pycache__/
 dist/
 build/
 *.sqlite3
+# Exception: the demo vault is synthetic data from a real live GPT-5.6 run,
+# committed so judges can inspect genuine receipts without an API key.
+# Never commit a real engagement vault - it holds raw documents and mappings.
+!demo/demo-vault.sqlite3
 .DS_Store
 demo/last_seed.json
 .env
