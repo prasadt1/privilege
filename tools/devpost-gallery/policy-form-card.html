@@ -38,34 +38,33 @@
   }
   #grid {
     display: grid;
-    grid-template-columns: 1.05fr 0.95fr;
-    gap: 22px;
-    align-items: stretch;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 20px;
+    align-items: start;
   }
-  .col { display: flex; flex-direction: column; gap: 12px; }
+  .col { display: flex; flex-direction: column; gap: 10px; }
   .field label {
     display: block;
-    font-size: 12px; color: var(--muted); margin-bottom: 5px;
+    font-size: 12px; color: var(--muted); margin-bottom: 4px;
   }
   .box {
     width: 100%;
     background: var(--cell);
     border: 1px solid var(--line);
     border-radius: 4px;
-    padding: 10px 12px;
-    font: 14px/1.4 var(--mono);
+    padding: 8px 11px;
+    font: 14px/1.35 var(--mono);
     color: var(--ink);
   }
-  .box.tall { min-height: 64px; white-space: pre-wrap; }
+  .box.tall { white-space: pre-wrap; }
   .hint {
     font-size: 12px; color: var(--muted); line-height: 1.35;
   }
   .preview {
-    flex: 1;
     background: var(--cell);
     border: 1px solid var(--line);
     border-radius: 6px;
-    padding: 16px 16px 14px;
+    padding: 14px 14px 12px;
     display: flex; flex-direction: column; gap: 10px;
   }
   .preview h2 {
@@ -73,15 +72,15 @@
     text-transform: uppercase; color: var(--muted);
   }
   .preview pre {
-    font: 15px/1.45 var(--mono); color: var(--amber);
-    white-space: pre-wrap; flex: 1;
+    font: 15px/1.4 var(--mono); color: var(--amber);
+    white-space: pre-wrap;
   }
   .preview .note {
-    font-size: 13px; color: var(--muted); line-height: 1.4;
+    font-size: 13px; color: var(--muted); line-height: 1.35;
     border-top: 1px solid var(--line); padding-top: 10px;
   }
   footer {
-    margin-top: 16px;
+    margin-top: 14px;
     display: flex; align-items: center; gap: 10px;
   }
   .btn {
