@@ -1,0 +1,10 @@
+{
+  "protected_values": ["Cinder Forge", "Project Ember"],
+  "aliases": {},
+  "abstract_rules": [
+    "That Cinder Forge is running a sale process under Project Ember is protected",
+    "Any buyer name or indicative valuation is protected"
+  ],
+  "allowed_purpose": "board pack preparation",
+  "strictness": "normal"
+}

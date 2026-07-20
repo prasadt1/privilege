@@ -20,6 +20,11 @@
     .receipt ul { margin: 12px 0 2px; padding-left: 18px; display: grid; gap: 7px; color: var(--muted); } .receipt li { overflow-wrap: anywhere; }
     .step { color: var(--amber); font-variant-numeric: tabular-nums; } .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
     .load-row { display: flex; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); } .load-row input { flex: 1; }
+    select { width: 100%; color: var(--ink); background: oklch(0.16 0.014 62); border: 1px solid var(--line); border-radius: 4px; padding: 9px; }
+    details summary { cursor: pointer; margin: 14px 0 4px; } code { color: var(--amber); }
+    .filebtn { display: inline-flex; align-items: center; background: transparent; color: var(--amber); border: 1px solid var(--amber); border-radius: 4px; padding: 9px 12px; font-weight: 700; cursor: pointer; margin: 0; }
+    .preview { margin: 16px 0 4px; padding: 12px 14px; background: oklch(0.16 0.014 62); border: 1px solid var(--line); border-radius: 4px; }
+    .preview h2 { margin-bottom: 8px; } .preview pre { color: var(--muted); font-size: 13px; }
     #notice { min-height: 20px; color: var(--muted); } .error { color: var(--red); }
     @media (max-width: 860px) { .setup, .workspace { grid-template-columns: 1fr; } header { align-items: flex-start; gap: 14px; flex-direction: column; } }
   </style>
@@ -30,9 +35,18 @@
     <div id="notice" role="status">Start at step 1. Each ask you send builds on what OpenAI has already seen.</div>
     <div class="setup">
       <section><div class="section-head"><h2><span class="step">1.</span> Define what is confidential</h2><span id="engagement-id" class="meta">not created</span></div>
-        <label>Client or project<input id="name" value="Northwind operating review"></label>
-        <label>Policy<textarea id="policy">{"protected_values":["Northwind Freight","Baltic corridor"],"aliases":{"Northwind":"Northwind Freight"},"abstract_rules":["[VALUE_1] withdrawal from [VALUE_2] is protected until the client announces it"],"allowed_purpose":"operating cost review"}</textarea></label>
-        <p class="hint">Protected values are masked locally. Abstract rules are the only policy text OpenAI ever sees, and they carry no real names.</p>
+        <label>Start from<select id="template"></select></label>
+        <label>Client or project<input id="name"></label>
+        <label>Names and terms that must stay confidential, one per line<textarea id="protected" rows="3"></textarea></label>
+        <label>What must not become inferable, one per line, in plain English<textarea id="rules" rows="3"></textarea></label>
+        <p class="hint">Write these normally, using real names. They are abstracted before OpenAI sees them. Preview below.</p>
+        <label>Why you are using AI on this<input id="purpose"></label>
+        <details><summary class="meta">Other names for the same thing, and raw policy</summary>
+          <label>Aliases, one per line as <code>short name = full name</code><textarea id="aliases" rows="2"></textarea></label>
+          <label>Policy JSON, edited automatically from the fields above<textarea id="policy" rows="4"></textarea></label>
+          <div class="actions"><button id="download" class="secondary" type="button">Download policy</button><label class="filebtn">Import policy<input id="import-policy" type="file" accept=".json" hidden></label></div>
+        </details>
+        <div class="preview"><h2>What OpenAI would receive as policy</h2><pre id="rules-preview">Add a rule above.</pre></div>
         <button id="create">Create engagement</button>
         <div class="load-row"><input id="load-id" placeholder="eng_... from a saved vault"><button id="load" class="secondary">Load existing</button></div>
       </section>
@@ -58,6 +72,127 @@
     const $ = id => document.getElementById(id);
     const notice = (text, error=false) => { $("notice").textContent = text; $("notice").className = error ? "error" : ""; };
     async function request(path, method="GET", body) { const response = await fetch(path, {method, headers: body ? {"Content-Type":"application/json"} : {}, body: body ? JSON.stringify(body) : undefined}); const data = await response.json(); if (!response.ok) throw new Error(data.error || "Request failed"); return data; }
+    // Starting points, not rules. Every engagement differs; these exist so the
+    // first policy takes a minute instead of a blank page.
+    const TEMPLATES = {
+      "restructuring": {
+        label: "Restructuring or market exit",
+        name: "Northwind operating review",
+        protected: ["Northwind Freight", "Baltic corridor"],
+        aliases: {"Northwind": "Northwind Freight"},
+        rules: ["Northwind Freight withdrawing from the Baltic corridor is protected until the client announces it"],
+        purpose: "operating cost review"
+      },
+      "sale": {
+        label: "Sale process or M&A",
+        name: "Cinder Forge board preparation",
+        protected: ["Cinder Forge", "Project Ember"],
+        aliases: {},
+        rules: ["That Cinder Forge is running a sale process under Project Ember is protected", "Any buyer name or indicative valuation is protected"],
+        purpose: "board pack preparation"
+      },
+      "launch": {
+        label: "Product launch under embargo",
+        name: "Lumen Atlas launch readiness",
+        protected: ["Lumen Atlas", "Orchid Line"],
+        aliases: {},
+        rules: ["The launch date of the Orchid Line by Lumen Atlas is protected until the embargo lifts"],
+        purpose: "launch readiness review"
+      },
+      "blank": { label: "Blank policy", name: "", protected: [], aliases: {}, rules: [], purpose: "" }
+    };
+    const lines = value => value.split("\n").map(line => line.trim()).filter(Boolean);
+    function aliasesFromText(text) {
+      const map = {};
+      lines(text).forEach(line => { const [short, full] = line.split("="); if (short && full) map[short.trim()] = full.trim(); });
+      return map;
+    }
+    function aliasesToText(map) { return Object.entries(map || {}).map(([short, full]) => `${short} = ${full}`).join("\n"); }
+    function policyFromForm() {
+      return {
+        protected_values: lines($("protected").value),
+        aliases: aliasesFromText($("aliases").value),
+        abstract_rules: lines($("rules").value),
+        allowed_purpose: $("purpose").value.trim(),
+        strictness: "normal"
+      };
+    }
+    // Mirrors EngagementPolicy.to_abstract_for_judge: longest value first, so
+    // "Northwind Freight" is replaced before "Northwind".
+    function abstractPreview(policy) {
+      const map = {};
+      policy.protected_values.forEach((value, index) => { map[value] = `[VALUE_${index + 1}]`; });
+      Object.entries(policy.aliases).forEach(([short, full]) => { if (map[full]) map[short] = map[full]; });
+      const keys = Object.keys(map).sort((a, b) => b.length - a.length);
+      return policy.abstract_rules.map(rule => keys.reduce((text, key) => text.split(key).join(map[key]), rule));
+    }
+    // Anything in a rule that is not on the protected list reaches OpenAI as
+    // written. Capitalised terms that survive abstraction are the likely
+    // operator mistake, so they are surfaced before the engagement is created.
+    const RULE_STOPWORDS = new Set(["A","An","The","Any","All","No","Not","Is","Are","Was","Were","This","That","These","Those","If","When","Until","Before","After","During","Q1","Q2","Q3","Q4"]);
+    function survivingNames(abstractedRules) {
+      const found = new Set();
+      abstractedRules.forEach(rule => {
+        const withoutPlaceholders = rule.replace(/\[VALUE_\d+\]/g, " ");
+        for (const match of withoutPlaceholders.matchAll(/\b[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*/g)) {
+          const words = match[0].split(/\s+/);
+          // Leading articles absorb into the match ("The Meridian Capital"),
+          // so strip them rather than discarding the whole phrase.
+          while (words.length && RULE_STOPWORDS.has(words[0])) words.shift();
+          if (!words.length) continue;
+          // A lone capitalised word opening the sentence is ordinary prose.
+          const startsRule = match.index === 0 || withoutPlaceholders.slice(0, match.index).trim() === "";
+          if (words.length === 1 && startsRule) continue;
+          found.add(words.join(" "));
+        }
+      });
+      return [...found];
+    }
+    function syncPolicy() {
+      const policy = policyFromForm();
+      $("policy").value = JSON.stringify(policy, null, 2);
+      const preview = abstractPreview(policy);
+      const leaking = survivingNames(preview);
+      let text = preview.length ? preview.map(rule => "- " + rule).join("\n") : "Add a rule above.";
+      if (leaking.length) text += `\n\nThese would be sent as written: ${leaking.join(", ")}. Add them above if they are confidential.`;
+      $("rules-preview").textContent = text;
+      $("rules-preview").className = leaking.length ? "error" : "";
+    }
+    function applyTemplate(key) {
+      const template = TEMPLATES[key];
+      $("name").value = template.name;
+      $("protected").value = template.protected.join("\n");
+      $("aliases").value = aliasesToText(template.aliases);
+      $("rules").value = template.rules.join("\n");
+      $("purpose").value = template.purpose;
+      syncPolicy();
+    }
+    $("template").innerHTML = Object.entries(TEMPLATES).map(([key, t]) => `<option value="${key}">${t.label}</option>`).join("");
+    $("template").onchange = event => applyTemplate(event.target.value);
+    ["protected", "rules", "aliases", "purpose"].forEach(id => { $(id).oninput = syncPolicy; });
+    $("download").onclick = () => {
+      const blob = new Blob([JSON.stringify(policyFromForm(), null, 2)], {type: "application/json"});
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = ($("name").value.trim().replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "policy") + ".json";
+      link.click(); URL.revokeObjectURL(link.href);
+      notice("Policy downloaded. It contains real names, so keep it local.");
+    };
+    $("import-policy").onchange = async event => {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const policy = JSON.parse(await file.text());
+        $("protected").value = (policy.protected_values || []).join("\n");
+        $("aliases").value = aliasesToText(policy.aliases);
+        $("rules").value = (policy.abstract_rules || []).join("\n");
+        $("purpose").value = policy.allowed_purpose || "";
+        syncPolicy();
+        notice(`Loaded policy from ${file.name}.`);
+      } catch (error) { notice(`Could not read ${file.name}: ${error.message}`, true); }
+      event.target.value = "";
+    };
+    applyTemplate("restructuring");
     const esc = value => String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
     function receiptCard(r) {
       const p = r.payload_json || {};

@@ -1,0 +1,9 @@
+{
+  "protected_values": ["Northwind Freight", "Baltic corridor"],
+  "aliases": {"Northwind": "Northwind Freight"},
+  "abstract_rules": [
+    "Northwind Freight withdrawing from the Baltic corridor is protected until the client announces it"
+  ],
+  "allowed_purpose": "operating cost review",
+  "strictness": "normal"
+}

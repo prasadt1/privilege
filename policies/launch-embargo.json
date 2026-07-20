@@ -1,0 +1,9 @@
+{
+  "protected_values": ["Lumen Atlas", "Orchid Line"],
+  "aliases": {},
+  "abstract_rules": [
+    "The launch date of the Orchid Line by Lumen Atlas is protected until the embargo lifts"
+  ],
+  "allowed_purpose": "launch readiness review",
+  "strictness": "normal"
+}
