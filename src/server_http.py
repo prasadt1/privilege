@@ -26,6 +26,11 @@ from .store import DEFAULT_DB_PATH, VaultStore
 
 WEB_ROOT = Path(__file__).resolve().parents[1] / "web"
 
+# An upload arrives base64 encoded inside a JSON body, so the whole request is
+# held in memory before extraction. Cap it rather than let a large or hostile
+# file exhaust the process. The CLI reads from disk and has no such limit.
+MAX_REQUEST_BYTES = 25 * 1024 * 1024
+
 
 class PrivilegeHandler(BaseHTTPRequestHandler):
     service: PrivilegeService
@@ -88,6 +93,11 @@ class PrivilegeHandler(BaseHTTPRequestHandler):
 
     def _body(self) -> dict[str, object]:
         length = int(self.headers.get("Content-Length", "0"))
+        if length > MAX_REQUEST_BYTES:
+            raise ValueError(
+                f"request is {length} bytes; the local viewer accepts up to "
+                f"{MAX_REQUEST_BYTES // (1024 * 1024)} MB. Use the CLI for a larger document."
+            )
         return json.loads(self.rfile.read(length))
 
     @staticmethod

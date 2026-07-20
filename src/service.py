@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 from typing import Any
 
@@ -48,11 +49,12 @@ class PrivilegeService:
     def _blocked_before_check(self, engagement_id: str, document_id: str, error: str) -> PreflightResult:
         result = PreflightResult(engagement_id, document_id, "Block", "", "", 0, [], [], 0, error)
         try:
-            self.store.save_receipt(engagement_id, result.decision, result.receipt_payload())
+            receipt_id = self.store.save_receipt(engagement_id, result.decision, result.receipt_payload())
         except Exception:
             # An unknown engagement cannot carry a receipt. The Block stands.
-            pass
-        return result
+            return result
+        # Surface the id so the caller can export the receipt for this Block.
+        return replace(result, receipt_id=receipt_id)
 
     def analyze(self, preflight: PreflightResult) -> AnalysisResult:
         return analyze_after_preflight(preflight, self.store, self.client)

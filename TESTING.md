@@ -16,7 +16,7 @@ Setup once:
 cd ~/OpenAI-hackathon
 python3.13 -m venv .venv
 .venv/bin/pip install -e ".[dev,files]"
-.venv/bin/python -m pytest -q          # expect: 28 passed
+.venv/bin/python -m pytest -q          # expect: 43 passed
 ```
 
 ---
@@ -27,7 +27,7 @@ python3.13 -m venv .venv
 .venv/bin/python -m pytest -q
 ```
 
-**Expect:** `28 passed`. Any failure stops the pass.
+**Expect:** `43 passed`. Any failure stops the pass.
 
 ---
 
@@ -193,8 +193,10 @@ env -u OPENAI_API_KEY .venv/bin/privilege --live --db $DB preflight \
   --engagement $EID --document $DID --task "Summarize."
 ```
 
-**Expect:** `error: OpenAI client is unavailable` on stderr and exit code 2.
-Nothing is sent. A stack trace here is a bug.
+**Expect:** JSON with `"decision": "Block"`, `"error": "PreflightError"`, an
+empty `final_payload`, and a `receipt_id`. Exit code is 0 because a Block is a
+valid outcome, not a command failure. Nothing is sent. A stack trace here is a
+bug, and so is an `Allow`.
 
 ```bash
 # Unknown ids
