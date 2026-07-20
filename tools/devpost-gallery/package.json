@@ -1,0 +1,14 @@
+{
+  "name": "privilege-devpost-gallery",
+  "private": true,
+  "type": "module",
+  "description": "Playwright capture pipeline for Privilege Devpost gallery images.",
+  "scripts": {
+    "capture:architecture": "node capture-architecture.mjs",
+    "capture:ui": "node capture-ui.mjs",
+    "install-browser": "playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.52.0"
+  }
+}

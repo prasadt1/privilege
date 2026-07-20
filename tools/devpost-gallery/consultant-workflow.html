@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Privilege — consultant workflow</title>
+<style>
+  :root {
+    --canvas: oklch(0.18 0.018 62);
+    --panel: oklch(0.23 0.02 62);
+    --cell: oklch(0.16 0.014 62);
+    --line: oklch(0.39 0.025 66);
+    --line-strong: oklch(0.48 0.03 68);
+    --ink: oklch(0.95 0.01 78);
+    --muted: oklch(0.7 0.02 75);
+    --faint: oklch(0.55 0.02 70);
+    --amber: oklch(0.79 0.15 73);
+    --green: oklch(0.72 0.12 155);
+    --red: oklch(0.7 0.17 28);
+    --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+    --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  /* Height hugs content — no 1080px empty band between rows */
+  html, body { background: var(--canvas); }
+  body {
+    width: 1440px;
+    color: var(--ink);
+    font-family: var(--sans);
+  }
+  #frame {
+    width: 1440px;
+    display: flex; flex-direction: column; gap: 0;
+    padding: 32px 40px 28px;
+  }
+  header {
+    display: flex; align-items: center; gap: 14px;
+  }
+  header .mark {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--amber); color: var(--canvas);
+    display: grid; place-items: center;
+    font-family: var(--mono); font-weight: 800; font-size: 18px;
+  }
+  header h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; }
+  header h1 span { color: var(--amber); font-weight: 600; }
+  header .tag {
+    font-family: var(--mono); font-size: 16px; letter-spacing: 0.08em;
+    color: var(--amber);
+  }
+  .lede {
+    font-size: 19px; color: var(--muted); max-width: 78ch;
+    line-height: 1.45; margin: 14px 0 16px;
+  }
+
+  #journey {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .step {
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    padding: 16px 14px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    position: relative;
+  }
+  .step .num {
+    font-family: var(--mono); font-size: 16px; font-weight: 800;
+    letter-spacing: 0.1em; color: var(--amber);
+  }
+  .step h2 {
+    font-size: 20px; font-weight: 700; line-height: 1.25;
+  }
+  .step p {
+    font-size: 16px; color: var(--muted); line-height: 1.4;
+  }
+  .step .where {
+    margin-top: auto;
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 8px 10px; border-radius: 6px;
+    background: var(--cell); border: 1px solid var(--line);
+  }
+  .step .where.local { color: var(--amber); }
+  .step .where.cloud { color: var(--green); }
+
+  .step:not(:last-child)::after {
+    content: '→';
+    position: absolute;
+    right: -14px; top: 40%;
+    transform: translateY(-50%);
+    font-size: 20px; color: var(--faint);
+    z-index: 2;
+  }
+
+  .bridge {
+    display: flex; align-items: center; gap: 12px;
+    margin: 10px 0 10px;
+    font-family: var(--mono); font-size: 15px; font-weight: 800;
+    letter-spacing: 0.08em; color: var(--faint);
+  }
+  .bridge::before, .bridge::after {
+    content: ''; flex: 1; height: 1px; background: var(--line);
+  }
+  .bridge span { color: var(--amber); white-space: nowrap; }
+
+  #branch {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    gap: 14px;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1.5px solid var(--line-strong);
+    border-radius: 14px;
+    padding: 20px 20px 18px;
+  }
+  .panel h3 {
+    font-size: 20px; font-weight: 700; margin-bottom: 10px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+    line-height: 1.3;
+  }
+  .badge {
+    font-family: var(--mono); font-size: 13px; font-weight: 800;
+    letter-spacing: 0.08em; padding: 5px 9px; border-radius: 5px;
+  }
+  .badge.allow { background: oklch(0.72 0.12 155 / 0.2); color: var(--green); }
+  .badge.transform { background: oklch(0.79 0.15 73 / 0.2); color: var(--amber); }
+  .badge.block { background: oklch(0.7 0.17 28 / 0.2); color: var(--red); }
+  .panel p { font-size: 17px; color: var(--muted); line-height: 1.45; }
+  .panel ul {
+    margin-top: 12px; padding-left: 20px;
+    font-size: 17px; color: var(--ink); line-height: 1.5;
+  }
+  .panel li { margin: 5px 0; }
+  .panel code {
+    font-family: var(--mono); font-size: 15px; color: var(--amber);
+  }
+  #panel-loop { border-color: oklch(0.79 0.15 73 / 0.45); }
+  #panel-mcp { border-color: oklch(0.78 0.08 250 / 0.4); }
+
+  footer {
+    margin-top: 18px;
+    font-family: var(--mono); font-size: 15px; color: var(--faint);
+    letter-spacing: 0.04em; line-height: 1.45;
+  }
+</style>
+</head>
+<body>
+<div id="frame">
+  <header>
+    <div class="mark" aria-hidden="true">P</div>
+    <h1>Privilege <span>/ consultant workflow</span></h1>
+    <span class="tag">· Work &amp; Productivity</span>
+  </header>
+  <p class="lede">
+    How a consultant uses Privilege on a real engagement — without pasting the
+    client file into ChatGPT, Codex, or Claude. Raw stays local; the agent only
+    triggers preflight on vaulted IDs.
+  </p>
+
+  <div id="journey">
+    <div class="step">
+      <div class="num">01</div>
+      <h2>Client sends a document</h2>
+      <p>Contract, operating notes, diligence pack — the kind you must not paste into a cloud chat.</p>
+      <div class="where local">ON YOUR MACHINE</div>
+    </div>
+    <div class="step">
+      <div class="num">02</div>
+      <h2>Import into Privilege</h2>
+      <p>Drop PDF / DOCX / text into the local viewer or CLI. Extraction runs on-device into the vault.</p>
+      <div class="where local">LOCAL VAULT</div>
+    </div>
+    <div class="step">
+      <div class="num">03</div>
+      <h2>Set what’s confidential</h2>
+      <p>Protected names + plain-English rules. Preview shows what OpenAI would see as policy — no real names.</p>
+      <div class="where local">ENGAGEMENT POLICY</div>
+    </div>
+    <div class="step">
+      <div class="num">04</div>
+      <h2>Ask your question</h2>
+      <p>“Summarize depot costs.” Privilege sanitizes, then GPT-5.6 attacks the candidate plus prior disclosures.</p>
+      <div class="where cloud">PREFLIGHT → GPT-5.6</div>
+    </div>
+    <div class="step">
+      <div class="num">05</div>
+      <h2>Decision + receipt</h2>
+      <p>Allow, Transform, or Block — with an inspectable receipt of inferences and matched rules.</p>
+      <div class="where local">WRITTEN LOCALLY</div>
+    </div>
+    <div class="step">
+      <div class="num">06</div>
+      <h2>Use the answer</h2>
+      <p>On Allow, analysis runs on sanitized text; real names are restored only on your laptop. Keep asking; the ledger accumulates.</p>
+      <div class="where local">RESTORED LOCALLY</div>
+    </div>
+  </div>
+
+  <div class="bridge"><span>↓ from step 05 — what happens next</span></div>
+
+  <div id="branch">
+    <div class="panel" id="panel-loop">
+      <h3>If Transform or Block <span class="badge transform">TRANSFORM</span> <span class="badge block">BLOCK</span></h3>
+      <p>The send is stopped or rewritten. You tighten the ask or the policy and try again — you do not “hope the redaction held.”</p>
+      <ul>
+        <li>Receipt shows what GPT-5.6 inferred</li>
+        <li>Mosaic risk: turn 4 can fail after 1–3 passed</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>If Allow <span class="badge allow">ALLOW</span></h3>
+      <p>GPT-5.6 does the real work on the sanitized payload. You get a restored answer for the client write-up — names never crossed the wire.</p>
+    </div>
+    <div class="panel" id="panel-mcp">
+      <h3>Optional · agent path</h3>
+      <p>Mount Privilege via MCP in Codex / Cursor / Claude. Import first in the app; the agent only calls <code>preflight</code> / <code>analyze</code> on vault IDs — no raw-text tool.</p>
+    </div>
+  </div>
+
+  <footer>
+    Productivity loop: import once → ask many times → cumulative preflight guards the engagement · never hand the raw file to the cloud agent
+  </footer>
+</div>
+</body>
+</html>

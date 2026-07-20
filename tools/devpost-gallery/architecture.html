@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Privilege — trust boundary</title>
+<style>
+  :root {
+    --canvas: oklch(0.18 0.018 62);
+    --panel: oklch(0.23 0.02 62);
+    --cell: oklch(0.16 0.014 62);
+    --line: oklch(0.39 0.025 66);
+    --line-strong: oklch(0.48 0.03 68);
+    --ink: oklch(0.95 0.01 78);
+    --muted: oklch(0.7 0.02 75);
+    --faint: oklch(0.55 0.02 70);
+    --amber: oklch(0.79 0.15 73);
+    --amber-dim: oklch(0.79 0.15 73 / 0.45);
+    --green: oklch(0.72 0.12 155);
+    --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+    --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { background: var(--canvas); }
+  body {
+    width: 1440px;
+    color: var(--ink);
+    font-family: var(--sans);
+  }
+  #frame {
+    width: 1440px;
+    display: flex; flex-direction: column;
+    padding: 28px 36px 26px;
+  }
+
+  header {
+    flex: none;
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 8px;
+  }
+  header .mark {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: var(--amber); color: var(--canvas);
+    display: grid; place-items: center;
+    font-family: var(--mono); font-weight: 800; font-size: 18px;
+  }
+  header .title { font-weight: 700; font-size: 28px; letter-spacing: -0.02em; }
+  header .title span { color: var(--amber); font-weight: 600; }
+  header .tag {
+    margin-left: 6px;
+    font-family: var(--mono); font-size: 15px; letter-spacing: 0.08em;
+    color: var(--amber);
+  }
+
+  #diagram {
+    display: grid;
+    grid-template-columns: 1.05fr 300px 0.95fr;
+    gap: 18px;
+    align-items: start;
+    padding-top: 20px;
+  }
+
+  #laptop, #openai {
+    position: relative;
+    border-radius: 18px;
+    padding: 34px 18px 16px;
+    display: flex; flex-direction: column; gap: 12px;
+    height: auto;
+  }
+  #laptop {
+    border: 2px dashed var(--amber-dim);
+    background: oklch(0.79 0.15 73 / 0.04);
+  }
+  #openai {
+    border: 2px solid oklch(0.72 0.12 155 / 0.45);
+    background: oklch(0.72 0.12 155 / 0.05);
+  }
+
+  .bound-label {
+    position: absolute; top: -15px; left: 16px;
+    background: var(--canvas); padding: 2px 14px;
+    font-family: var(--mono); font-size: 15px; font-weight: 800;
+    letter-spacing: 0.08em; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  #laptop .bound-label { color: var(--amber); }
+  #openai .bound-label { color: var(--green); }
+  .bound-label svg { width: 22px; height: 22px; flex: none; }
+  .bound-label img.chatgpt {
+    width: 24px; height: 24px; flex: none; object-fit: contain;
+  }
+
+  .band {
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    padding: 14px 15px;
+  }
+  .band-head {
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .band-head .ico {
+    width: 38px; height: 38px; flex: none;
+    border-radius: 8px; background: var(--cell);
+    border: 1px solid var(--line);
+    display: grid; place-items: center;
+    color: var(--amber);
+  }
+  .band-head .ico svg { width: 21px; height: 21px; }
+  .band h3 { font-size: 20px; font-weight: 700; line-height: 1.2; }
+  .band .sub { font-size: 15px; color: var(--muted); margin-top: 3px; line-height: 1.35; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chip {
+    font-family: var(--mono); font-size: 14px; font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 8px 12px; border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--cell); color: var(--ink);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .chip.mcp {
+    background: var(--amber); color: var(--canvas); border-color: transparent;
+  }
+
+  #band-core {
+    background: linear-gradient(180deg, oklch(0.79 0.15 73 / 0.16), oklch(0.79 0.15 73 / 0.04));
+    border: 2px solid oklch(0.79 0.15 73 / 0.55);
+    text-align: center; padding: 16px 14px 14px;
+  }
+  #band-core h2 {
+    font-size: 30px; font-weight: 800; color: var(--amber);
+    letter-spacing: 0.03em; line-height: 1.1;
+  }
+  #band-core .tagline {
+    font-size: 16px; color: var(--muted); margin-top: 6px; font-style: italic;
+  }
+  .pillars {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin-top: 12px;
+  }
+  .pillar {
+    background: var(--cell); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px 6px; text-align: center;
+  }
+  .pillar b { display: block; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .pillar span { display: block; font-size: 13px; color: var(--muted); line-height: 1.3; }
+
+  #band-vault .stay {
+    margin-top: 10px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  #band-vault .stay div {
+    background: var(--cell); border: 1px solid var(--line);
+    border-radius: 8px; padding: 11px 12px;
+    font-size: 14px; color: var(--muted); line-height: 1.35;
+  }
+  #band-vault .stay b {
+    display: block; color: var(--ink); font-size: 15px; margin-bottom: 2px;
+  }
+
+  .foot-strip {
+    margin-top: 2px;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 15px; line-height: 1.4;
+    border: 1px dashed var(--line);
+    background: var(--cell);
+  }
+  .foot-strip b {
+    display: block;
+    font-family: var(--mono); font-size: 12px; font-weight: 800;
+    letter-spacing: 0.08em; margin-bottom: 6px;
+  }
+  #laptop .foot-strip {
+    border-color: oklch(0.79 0.15 73 / 0.4);
+    color: var(--muted);
+  }
+  #laptop .foot-strip b { color: var(--amber); }
+  #openai .foot-strip {
+    border-color: oklch(0.72 0.12 155 / 0.4);
+    color: var(--muted);
+  }
+  #openai .foot-strip b { color: var(--green); }
+
+  #wire {
+    display: flex; flex-direction: column;
+    align-items: stretch; justify-content: center;
+    gap: 12px; padding: 4px 0;
+  }
+  .flow-card {
+    background: var(--panel);
+    border: 1.5px solid var(--line-strong);
+    border-radius: 12px;
+    padding: 16px 15px 14px;
+  }
+  .flow-card.out { border-color: oklch(0.79 0.15 73 / 0.55); }
+  .flow-card.in { border-color: oklch(0.72 0.12 155 / 0.5); }
+  .flow-dir {
+    font-family: var(--mono); font-size: 14px; font-weight: 800;
+    letter-spacing: 0.1em; margin-bottom: 10px;
+  }
+  .flow-card.out .flow-dir { color: var(--amber); }
+  .flow-card.in .flow-dir { color: var(--green); }
+  .flow-card ul { list-style: none; display: grid; gap: 8px; }
+  .flow-card li {
+    font-size: 17px; font-weight: 650; line-height: 1.35;
+    color: var(--ink);
+    padding: 11px 12px;
+    background: var(--cell);
+    border-radius: 7px;
+    border: 1px solid var(--line);
+  }
+  .flow-arrow {
+    display: flex; flex-direction: column; align-items: center;
+    color: var(--faint); font-size: 22px; line-height: 1;
+  }
+
+  .ext-card {
+    background: var(--panel);
+    border: 1.5px solid var(--line-strong);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .ext-card .top {
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .ext-card .logo {
+    width: 46px; height: 46px; flex: none;
+    border-radius: 10px;
+    background: oklch(0.22 0.03 155);
+    border: 1px solid oklch(0.72 0.12 155 / 0.35);
+    display: grid; place-items: center;
+    padding: 6px;
+  }
+  .ext-card .logo img {
+    width: 100%; height: 100%; object-fit: contain; display: block;
+  }
+  .ext-card h3 { font-size: 21px; font-weight: 700; }
+  .ext-card .sub {
+    font-size: 15px; color: var(--muted); margin-top: 5px; line-height: 1.4;
+  }
+  .ext-card .model {
+    margin-top: 10px;
+    font-family: var(--mono); font-size: 14px; font-weight: 700;
+    color: var(--amber); letter-spacing: 0.04em;
+  }
+  #card-attack { border-color: oklch(0.79 0.15 73 / 0.5); }
+  #card-analyze { border-color: oklch(0.72 0.12 155 / 0.45); }
+  #card-ledger { border-color: oklch(0.72 0.12 155 / 0.35); }
+  .note {
+    font-size: 14px; color: var(--muted); line-height: 1.4;
+    padding: 2px 2px 0;
+  }
+  .note strong { color: var(--ink); font-weight: 600; }
+
+  footer {
+    margin-top: 16px;
+    font-family: var(--mono); font-size: 14px; color: var(--faint);
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ico-laptop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <rect x="3" y="4" width="18" height="12" rx="2"/>
+      <path d="M2 20h20"/>
+    </symbol>
+    <symbol id="ico-surfaces" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+      <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+    </symbol>
+    <symbol id="ico-vault" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/>
+      <path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>
+    </symbol>
+    <symbol id="ico-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 17l6-5-6-5"/><path d="M12 19h8"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div id="frame">
+  <header>
+    <div class="mark" aria-hidden="true">P</div>
+    <div class="title">Privilege <span>/ local preflight</span></div>
+    <span class="tag">· trust boundary</span>
+  </header>
+
+  <div id="diagram">
+    <div id="laptop">
+      <div class="bound-label">
+        <svg><use href="#ico-laptop"/></svg>
+        YOUR LAPTOP — never leaves
+      </div>
+
+      <div class="band" id="band-surfaces">
+        <div class="band-head">
+          <div class="ico"><svg><use href="#ico-surfaces"/></svg></div>
+          <div>
+            <h3>Surfaces</h3>
+            <p class="sub">Same core behind three thin interfaces</p>
+          </div>
+        </div>
+        <div class="chips">
+          <span class="chip"><svg width="14" height="14" aria-hidden="true"><use href="#ico-terminal"/></svg> CLI</span>
+          <span class="chip">Local viewer</span>
+          <span class="chip mcp">MCP</span>
+        </div>
+      </div>
+
+      <div class="band" id="band-core">
+        <h2>PRIVILEGE CORE</h2>
+        <p class="tagline">sanitize → blind attack → Allow / Transform / Block</p>
+        <div class="pillars">
+          <div class="pillar"><b>Sanitize</b><span>local, deterministic masks</span></div>
+          <div class="pillar"><b>Preflight</b><span>GPT-5.6 as attacker</span></div>
+          <div class="pillar"><b>Receipts</b><span>inspectable decisions</span></div>
+        </div>
+      </div>
+
+      <div class="band" id="band-vault">
+        <div class="band-head">
+          <div class="ico"><svg><use href="#ico-vault"/></svg></div>
+          <div>
+            <h3>Local vault</h3>
+            <p class="sub">SQLite on device · ~/.privilege</p>
+          </div>
+        </div>
+        <div class="stay">
+          <div><b>Raw documents</b>imported files stay here</div>
+          <div><b>Name mappings</b>placeholders ↔ real values</div>
+          <div><b>Abstract policy</b>rules without real names</div>
+          <div><b>Restored answers</b>rehydrated only locally</div>
+        </div>
+      </div>
+
+      <div class="foot-strip">
+        <b>FAIL-CLOSED ON THIS SIDE</b>
+        Bad file, missing key, or exhausted repair → Block. Receipts stay local for the engagement audit trail.
+      </div>
+    </div>
+
+    <div id="wire">
+      <div class="flow-card out">
+        <div class="flow-dir">OUT → OpenAI</div>
+        <ul>
+          <li>Sanitized text</li>
+          <li>Abstract rules</li>
+          <li>Prior sanitized disclosures</li>
+        </ul>
+      </div>
+      <div class="flow-arrow" aria-hidden="true">↓</div>
+      <div class="flow-card in">
+        <div class="flow-dir">← BACK to laptop</div>
+        <ul>
+          <li>Allow / Transform / Block</li>
+          <li>Inspectable receipt</li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="openai">
+      <div class="bound-label">
+        <img class="chatgpt" src="chatgpt-logo-green.png" alt="" />
+        OPENAI — receives only this
+      </div>
+
+      <div class="ext-card" id="card-attack">
+        <div class="top">
+          <div class="logo"><img src="chatgpt-logo-green.png" alt="ChatGPT" /></div>
+          <div>
+            <h3>GPT-5.6 attacker</h3>
+            <p class="sub">Blind inference on sanitized candidate + prior disclosures. No raw text. No mappings.</p>
+            <p class="model">PRIVILEGE_MODEL · gpt-5.6</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ext-card" id="card-analyze">
+        <div class="top">
+          <div class="logo"><img src="chatgpt-logo-green.png" alt="ChatGPT" /></div>
+          <div>
+            <h3>GPT-5.6 analysis</h3>
+            <p class="sub">Runs only after an Allow. Works on sanitized text; answer restored on the laptop.</p>
+            <p class="model">Allow only</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ext-card" id="card-ledger">
+        <div class="top">
+          <div class="logo"><img src="chatgpt-logo-green.png" alt="ChatGPT" /></div>
+          <div>
+            <h3>Cumulative disclosure ledger</h3>
+            <p class="sub">Each Allow adds a sanitized payload to what the next preflight attack can see — mosaic risk is checked, not ignored.</p>
+            <p class="model">Same destination only · OpenAI MVP</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot-strip">
+        <b>NEVER ARRIVES HERE</b>
+        Raw documents · real client names · placeholder mappings · restored answers.
+      </div>
+
+      <p class="note"><strong>Not claimed:</strong> anonymity, compliance, or that OpenAI never sees sensitive context. This is a data-minimisation preflight.</p>
+    </div>
+  </div>
+
+  <footer>Raw docs, mappings, and restored output never leave the machine · OpenAI destination only in MVP</footer>
+</div>
+</body>
+</html>
