@@ -2,60 +2,51 @@
 
 ## Expected Result
 
-Before running the live evaluation, the expected outcome was that cumulative
-treatment would detect more authored protected-fact disclosures than the
-independent baseline, while preserving required task facts. This is a
-hypothesis, not a pass condition: false blocks, missed leaks, and treatment
-underperformance must remain published if the live run produces them.
+Before the live run, the expected result was that cumulative treatment would
+detect more authored protected-fact disclosures than the independent baseline
+while retaining required task facts. This was a hypothesis, not a pass
+condition. Frozen scenarios were committed before the runner and results.
 
 ## Live GPT-5.6 Results
 
-> **This run is INVALID and is retained only as a record of a failed attempt.**
-> It is not evidence about the approach, in either direction. See "Why this run
-> is invalid" below. A valid live run is pending.
-
-The run below used `eval/run.py --live` against the frozen scenarios in
-`scenarios.py`; those labels were committed before the runner and results.
+`results.live.json` is the headline artifact from the valid live run. It has
+30 distinct payload hashes, rounds ranging from 0 to 2, varied decisions, and
+different baseline and treatment outcomes.
 
 | Metric | Baseline | Cumulative treatment |
 |---|---:|---:|
-| Leak recall | 1.0 | 1.0 |
-| False-block rate | 1.0 | 1.0 |
-| Attack success before transformation | 1.0 | 1.0 |
-| Attack success after transformation | 1.0 | 1.0 |
-| Task-fact retention | 0.0 | 0.0 |
-| Expected-decision agreement | 0.0 | 0.0 |
-| Receipt/payload reproducibility | - | 1.0 |
+| Leak recall | 0.429 (3/7) | 0.571 (4/7) |
+| False-block rate | 0.0 | 0.0 |
+| Attack success before transformation | 0.429 | 0.571 |
+| Attack success after transformation | 0.0 | 0.0 |
+| Task-fact retention | 1.0 | 1.0 |
+| Expected-decision agreement | 0.8 | 0.767 |
+| Receipt/payload reproducibility | - | 0.767 |
 
-### Why this run is invalid
+Treatment caught 4 of 7 protected turns versus baseline's 3 of 7: a one-turn
+difference. Seven cases cannot support a strong efficacy claim.
 
-No model call in this run ever succeeded. The evidence is unambiguous:
+**Headline limitation: treatment's absolute recall is 0.571, so it missed
+more than 40% of the authored leaks (3 of 7).** This result is evidence of a
+small signal in this frozen set, not evidence that the approach is reliable.
 
-- All 30 turns returned `rounds: 0` — meaning failure occurred on the first
-  call, before any inference was attempted.
-- All 30 turns carry `payload_hash` = `e3b0c442...b855`, which is
-  `sha256("")`. An empty payload is reachable only from the fail-closed
-  exception handler in `src/preflight.py`, never from a completed preflight.
-- Baseline and treatment are identical on every metric. The two modes differ
-  only in whether prior disclosures are supplied to the attacker, so identical
-  results mean neither mode reached the attacker at all.
+Treatment also scored lower on expected-decision agreement (`0.767` versus
+`0.8`). One open question is whether some treatment transforms are correct
+early mosaic catches that disagree with the frozen labels; the current result
+does not resolve that question.
 
-Cause: the client defaulted to a model slug that the API does not serve, so
-every request raised before inference. Fail-closed behaviour then converted
-each failure into a `Block`.
+Receipt/payload reproducibility was `0.767` live versus `1.0` in the mock
+harness. Live non-determinism means receipts do not always replay. This is a
+real defect, not a presentation detail.
 
-**What this run does and does not show.** It does not show that cumulative
-checking underperforms — the approach was never exercised. It does confirm one
-designed property: under total remote failure, the system blocked all 30 turns
-and emitted no payload. Nothing leaked when the model was unreachable.
+Per-turn decisions and the raw metrics are retained in `results.live.json`.
 
-A separate defect this exposed: `_turn_record` in `run.py` did not capture
-`result.error`, so all 30 turns reported `error: None` and a complete outage
-was serialized as a clean metrics table. An evaluator that cannot distinguish
-a policy Block from an infrastructure failure is not trustworthy, and this is
-being fixed before any valid run is published.
+## Validity Rule
 
-Per-turn decisions are retained verbatim in `results.live.json`.
+The evaluator now records each preflight's `error` and emits an error count
+for baseline and treatment. Any mode with one or more errors is marked
+`INVALID` and has no efficacy metrics emitted. This prevents fail-closed API
+outages from being published as policy outcomes.
 
 ## Mock CI Artifact
 
@@ -64,6 +55,6 @@ uses keyword matching whose cues mirror the frozen scenario vocabulary. Its
 results are **not evidence of efficacy** and must not be compared with live
 GPT-5.6 performance as though they were an independent security evaluation.
 
-The mock harness exists to verify evaluator wiring, receipt replay, and stable
-result serialization without an API call. It does not validate semantic leak
+The mock harness verifies evaluator wiring, receipt replay, and stable result
+serialization without an API call. It does not validate semantic leak
 detection.

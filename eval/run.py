@@ -97,6 +97,7 @@ def _turn_record(scenario_id: str, disclosure: dict[str, Any], result: Preflight
         "task_fact_retained": retained and result.decision != "Block",
         "payload_hash": __import__("hashlib").sha256(result.final_payload.encode()).hexdigest(),
         "rounds": result.rounds,
+        "error": result.error,
     }
 
 
@@ -136,25 +137,47 @@ def _ratio(numerator: int, denominator: int) -> float:
     return round(numerator / denominator, 3) if denominator else 0.0
 
 
+def _mode_result(records: list[dict[str, object]], *, replay_error_count: int = 0) -> dict[str, object]:
+    """Return metrics only when every preflight in this mode completed cleanly."""
+    error_count = sum(record["error"] is not None for record in records)
+    invalid = error_count > 0 or replay_error_count > 0
+    result: dict[str, object] = {
+        "validity": "INVALID" if invalid else "VALID",
+        "error_count": error_count,
+        "turns": records,
+    }
+    if replay_error_count:
+        result["replay_error_count"] = replay_error_count
+    if not invalid:
+        result["metrics"] = _metrics(records)
+    return result
+
+
 def run_evaluation(*, live: bool = False) -> dict[str, object]:
     """Run baseline and cumulative treatment, then verify deterministic replay."""
     baseline = [record for scenario in SCENARIOS for record in _run_scenario(scenario, cumulative=False, live=live)]
     treatment = [record for scenario in SCENARIOS for record in _run_scenario(scenario, cumulative=True, live=live)]
     replay = [record for scenario in SCENARIOS for record in _run_scenario(scenario, cumulative=True, live=live)]
+    replay_error_count = sum(record["error"] is not None for record in replay)
     reproducible = sum(
         (record["decision"], record["payload_hash"], record["rounds"])
         == (again["decision"], again["payload_hash"], again["rounds"])
         for record, again in zip(treatment, replay, strict=True)
     )
+    baseline_result = _mode_result(baseline)
+    treatment_result = _mode_result(treatment, replay_error_count=replay_error_count)
+    if treatment_result["validity"] == "VALID":
+        treatment_result["metrics"] = {
+            **treatment_result["metrics"],
+            "receipt_reproducibility": _ratio(reproducible, len(treatment)),
+        }
     return {
         "mode": "live" if live else "mock",
+        "validity": "VALID" if baseline_result["validity"] == treatment_result["validity"] == "VALID" else "INVALID",
         "scenario_count": len(SCENARIOS),
         "turn_count": len(treatment),
-        "baseline": {"metrics": _metrics(baseline), "turns": baseline},
-        "treatment": {
-            "metrics": {**_metrics(treatment), "receipt_reproducibility": _ratio(reproducible, len(treatment))},
-            "turns": treatment,
-        },
+        "baseline": baseline_result,
+        "treatment": treatment_result,
         "limitations": [
             "MockAttacker is a DETERMINISM/PLUMBING CI harness only. Its keyword cues mirror scenario vocabulary; mock scores are NOT efficacy evidence.",
             "Live results depend on the configured OpenAI model and are not used to alter frozen labels.",
