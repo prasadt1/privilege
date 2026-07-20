@@ -238,3 +238,49 @@ def test_web_heuristic_misses_lowercase_confidential_terms():
     ).to_abstract_for_judge()
     assert abstract == ["the meridian capital bid is protected"]
     assert surviving_names(abstract) == set()
+
+
+@pytest.mark.parametrize(
+    "label,text",
+    [
+        ("cyrillic-A", "Аcme Corp is exiting"),
+        ("cyrillic-C", "Acme Сorp is exiting"),
+        ("greek-omicron", "Acme Cοrp is exiting"),
+        ("fullwidth", "Ａｃｍｅ　Ｃｏｒｐ is exiting"),
+        ("zero-width-space-inside", "Ac​me Corp is exiting"),
+        ("zero-width-space-between", "Acme​ Corp is exiting"),
+        ("zero-width-joiner", "Acme‍Corp is exiting"),
+        ("soft-hyphen", "Ac­me Corp is exiting"),
+        ("combining-acute", "Acmé Corp is exiting"),
+    ],
+)
+def test_lookalikes_and_invisibles_cannot_smuggle_a_declared_value(label: str, text: str):
+    """Regression: a name that reads as declared must mask however it is encoded.
+
+    Each of these rendered identically to "Acme Corp" on screen while reaching
+    OpenAI as a real client name.
+    """
+    out = sanitize(text, {"Acme Corp": "[V1]"}).text
+    assert "[V1]" in out, f"{label} was not masked: {out!r}"
+    assert "orp" not in out.replace("[V1]", ""), f"{label} left a fragment: {out!r}"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Müller GmbH in Zürich reviewed Acme Corp",
+        "Le café près d'Acme Corp",
+        "東京 office of Acme Corp",
+        "line one\nAcme Corp\nline three",
+    ],
+)
+def test_text_outside_a_match_is_returned_unchanged(text: str):
+    """Folding is for matching only. Accents and layout must survive."""
+    out = sanitize(text, {"Acme Corp": "[V1]"}).text
+    assert out.replace("[V1]", "Acme Corp") == text
+
+
+def test_value_of_only_invisible_characters_matches_nothing():
+    """An empty folded value must not compile to a pattern that matches everywhere."""
+    out = sanitize("nothing confidential here", {"​‍": "[V1]"}).text
+    assert out == "nothing confidential here"

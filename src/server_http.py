@@ -92,13 +92,29 @@ class PrivilegeHandler(BaseHTTPRequestHandler):
         """Keep local operator output focused on explicit startup messages."""
 
     def _body(self) -> dict[str, object]:
-        length = int(self.headers.get("Content-Length", "0"))
+        if self.headers.get("Transfer-Encoding", "").lower() == "chunked":
+            # Not decoded here, and a chunked body carries no declared length,
+            # so the size cap could not be enforced against it.
+            raise ValueError("chunked request bodies are not accepted")
+
+        raw_length = self.headers.get("Content-Length", "0")
+        try:
+            length = int(raw_length)
+        except ValueError:
+            raise ValueError(f"invalid Content-Length: {raw_length!r}") from None
+        if length < 0:
+            # A negative length passed the cap check and then read(-1) drained
+            # the socket to EOF, which is exactly the case the cap exists for.
+            raise ValueError(f"invalid Content-Length: {raw_length!r}")
         if length > MAX_REQUEST_BYTES:
             raise ValueError(
                 f"request is {length} bytes; the local viewer accepts up to "
                 f"{MAX_REQUEST_BYTES // (1024 * 1024)} MB. Use the CLI for a larger document."
             )
-        return json.loads(self.rfile.read(length))
+        body = self.rfile.read(length)
+        if len(body) != length:
+            raise ValueError("request body was shorter than its Content-Length")
+        return json.loads(body)
 
     @staticmethod
     def _extract_upload(filename: str, content_base64: str) -> str:
