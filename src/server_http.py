@@ -8,12 +8,14 @@ from __future__ import annotations
 
 import argparse
 import base64
+import errno
 from dataclasses import asdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
+import sys
 import tempfile
 from urllib.parse import parse_qs, urlparse
 
@@ -166,8 +168,24 @@ def main(argv: list[str] | None = None) -> int:
     elif args.live:
         os.environ.pop("PRIVILEGE_MOCK", None)
     PrivilegeHandler.service = PrivilegeService(VaultStore(args.db))
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), PrivilegeHandler)
-    print(f"Privilege local UI: http://127.0.0.1:{args.port}")
+    try:
+        server = ThreadingHTTPServer(("127.0.0.1", args.port), PrivilegeHandler)
+    except OSError as error:
+        if error.errno != errno.EADDRINUSE:
+            raise
+        print(
+            f"error: port {args.port} is already in use. Another viewer is probably\n"
+            f"       still running. Stop it, or choose another port with --port.",
+            file=sys.stderr,
+        )
+        PrivilegeHandler.service.store.close()
+        return 2
+
+    mode = _runtime_mode()
+    # flush so the address and mode appear immediately even when stdout is
+    # redirected to a file or a log, where it would otherwise be block buffered.
+    print(f"Privilege local UI: http://127.0.0.1:{args.port}", flush=True)
+    print(f"Mode: {mode['label']}. {mode['detail']}", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
