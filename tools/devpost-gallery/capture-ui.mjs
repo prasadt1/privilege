@@ -153,19 +153,71 @@ const browser = await launch();
 
     $('notice').textContent = 'Allow. Paste the safe text into another AI, then restore names from the reply.';
     $('receipts-fold').open = false;
+
+    // Article crop: hide secondary chrome; keep the four-step story readable
+    // without the tall full-page scroll that blows up Devpost embeds.
+    $('ask-fold').style.display = 'none';
+    $('receipts-fold').style.display = 'none';
+    $('export-safe').style.display = 'none';
+    const hint = document.querySelector('#step-3 > .step-body > .hint');
+    if (hint) hint.style.display = 'none';
+    $('notice').style.display = 'none';
+    const brandP = document.querySelector('.brand p');
+    if (brandP) brandP.style.display = 'none';
+    const askToggle = $('ask-toggle');
+    if (askToggle) askToggle.style.display = 'none';
+    // Prefer a short, readable safe excerpt for the hero.
+    $('sanitized').textContent =
+      '[VALUE_1] operates 14 depots. [VALUE_2] volumes fell 22% year on year.\n' +
+      'Depot leases in that corridor expire in Q3. The board has not yet announced any change.';
+    $('sanitized').style.maxHeight = '4.8em';
+    $('trust').innerHTML =
+      '<strong>Allow</strong> — no material disclosure. Copy into ChatGPT, Claude, or another tool.';
   }, vault);
 
-  await page.waitForTimeout(400);
-
-  // Crop to the product story: header + four steps with Allow export open.
-  // Leave receipts out of the hero — they have their own gallery image.
-  await page.locator('.wrap').screenshot({
-    path: join(MEDIA, 'viewer-three-column.png'),
+  await page.addStyleTag({
+    content: `
+      .wrap { max-width: 920px !important; padding: 18px 22px 20px !important; }
+      header { margin-bottom: 10px !important; }
+      .steps { gap: 10px !important; margin-top: 0 !important; }
+      .step-head { padding: 12px 16px !important; gap: 10px !important; }
+      .step-title { font-size: 16px !important; }
+      .step-sub { font-size: 13px !important; }
+      .num { width: 26px !important; height: 26px !important; font-size: 13px !important; }
+      .step-body { padding: 0 16px 14px !important; }
+      .safebox { margin-top: 10px !important; padding: 12px !important; }
+      .safebox pre { font-size: 13px !important; line-height: 1.45 !important; }
+      .trust { margin-top: 8px !important; font-size: 13px !important; }
+      .row { margin-top: 8px !important; }
+      .btn.small { padding: 7px 11px !important; font-size: 13px !important; }
+      .decision-badge { font-size: 14px !important; padding: 5px 12px !important; }
+    `,
   });
-  console.log('wrote viewer-three-column.png (Allow export-result hero)');
 
-  // Separate shot: mosaic Transform receipt.
+  await page.waitForTimeout(300);
+
+  // Clip to header through step 4 — article-friendly height.
+  const clip = await page.evaluate(() => {
+    const wrap = document.querySelector('.wrap').getBoundingClientRect();
+    const end = document.getElementById('step-4').getBoundingClientRect();
+    const pad = 6;
+    return {
+      x: Math.max(0, wrap.left - pad),
+      y: Math.max(0, wrap.top - pad),
+      width: Math.ceil(wrap.width + pad * 2),
+      height: Math.ceil(end.bottom - wrap.top + pad * 2),
+    };
+  });
+  await page.screenshot({
+    path: join(MEDIA, 'viewer-three-column.png'),
+    clip,
+  });
+  console.log('wrote viewer-three-column.png (Allow export-result, article crop)');
+
+  // Restore folds for the receipt shot.
   await page.evaluate(() => {
+    document.getElementById('ask-fold').style.display = '';
+    document.getElementById('receipts-fold').style.display = '';
     document.getElementById('receipts-fold').open = true;
   });
   await page.waitForTimeout(200);
