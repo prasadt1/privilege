@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 import json
 from pathlib import Path
 import sqlite3
+import threading
 from typing import Any
 from uuid import uuid4
 
@@ -51,13 +52,23 @@ class VaultStore:
     def __init__(self, db_path: str | Path = DEFAULT_DB_PATH) -> None:
         self.db_path = Path(db_path).expanduser()
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._connection = sqlite3.connect(self.db_path)
+        # check_same_thread=False lets the threaded local HTTP viewer reuse one
+        # connection. Writes are serialized by _lock. This vault is single
+        # operator and single process by design; it is not a shared server.
+        self._connection = sqlite3.connect(self.db_path, check_same_thread=False)
+        self._lock = threading.Lock()
         self._connection.row_factory = sqlite3.Row
         self._connection.execute("PRAGMA foreign_keys = ON")
         self._create_schema()
 
     def close(self) -> None:
         self._connection.close()
+
+    def _write(self, sql: str, params: tuple[Any, ...]) -> None:
+        """Execute and commit one statement under the write lock."""
+        with self._lock:
+            self._connection.execute(sql, params)
+            self._connection.commit()
 
     def _create_schema(self) -> None:
         self._connection.executescript(
@@ -93,11 +104,10 @@ class VaultStore:
     def create_engagement(self, name: str, policy: EngagementPolicy | dict[str, Any]) -> str:
         policy_object = policy if isinstance(policy, EngagementPolicy) else EngagementPolicy.from_dict(policy)
         engagement_id = self._new_id("eng")
-        self._connection.execute(
+        self._write(
             "INSERT INTO engagements VALUES (?, ?, ?, ?)",
             (engagement_id, name, json.dumps(policy_object.to_dict()), self._now()),
         )
-        self._connection.commit()
         return engagement_id
 
     def get_engagement(self, engagement_id: str) -> Engagement:
@@ -109,11 +119,10 @@ class VaultStore:
     def import_document(self, engagement_id: str, title: str, raw_text: str) -> str:
         self.get_engagement(engagement_id)
         document_id = self._new_id("doc")
-        self._connection.execute(
+        self._write(
             "INSERT INTO documents VALUES (?, ?, ?, ?, ?)",
             (document_id, engagement_id, title, raw_text, self._now()),
         )
-        self._connection.commit()
         return document_id
 
     def get_document(self, document_id: str) -> Document:
@@ -133,11 +142,10 @@ class VaultStore:
 
     def upsert_mapping(self, engagement_id: str, real_value: str, placeholder: str) -> None:
         self.get_engagement(engagement_id)
-        self._connection.execute(
+        self._write(
             "INSERT INTO mappings VALUES (?, ?, ?) ON CONFLICT(engagement_id, real_value) DO UPDATE SET placeholder = excluded.placeholder",
             (engagement_id, real_value, placeholder),
         )
-        self._connection.commit()
 
     def get_mappings(self, engagement_id: str) -> dict[str, str]:
         self.get_engagement(engagement_id)
@@ -149,11 +157,10 @@ class VaultStore:
     def append_ledger(self, engagement_id: str, destination: str, payload: str) -> str:
         self.get_engagement(engagement_id)
         entry_id = self._new_id("led")
-        self._connection.execute(
+        self._write(
             "INSERT INTO ledger VALUES (?, ?, ?, ?, ?)",
             (entry_id, engagement_id, destination, payload, self._now()),
         )
-        self._connection.commit()
         return entry_id
 
     def list_ledger(self, engagement_id: str, destination: str | None = None) -> list[dict[str, str]]:
@@ -170,11 +177,10 @@ class VaultStore:
         self.get_engagement(engagement_id)
         receipt_id = self._new_id("rcpt")
         payload = payload_json if isinstance(payload_json, str) else json.dumps(payload_json)
-        self._connection.execute(
+        self._write(
             "INSERT INTO receipts VALUES (?, ?, ?, ?, ?)",
             (receipt_id, engagement_id, decision, payload, self._now()),
         )
-        self._connection.commit()
         return receipt_id
 
     def get_receipt(self, receipt_id: str) -> dict[str, str]:
