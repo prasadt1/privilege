@@ -79,6 +79,15 @@ class PrivilegeHandler(BaseHTTPRequestHandler):
                 preflight = self.service.preflight(body["engagement_id"], body["document_id"], body["task"])
                 analysis = self.service.analyze(preflight)
                 self._send_json({"preflight": asdict(preflight), "analysis": asdict(analysis)})
+            elif self.path == "/api/export-safe":
+                package = self.service.export_safe(
+                    body["engagement_id"],
+                    body["document_id"],
+                    body.get("task"),
+                )
+                self._send_json(package)
+            elif self.path == "/api/rehydrate":
+                self._send_json(self.service.rehydrate(body["engagement_id"], body["text"]))
             else:
                 self._send_json({"error": "not found"}, HTTPStatus.NOT_FOUND)
         except (ValueError, KeyError, json.JSONDecodeError) as error:

@@ -40,12 +40,15 @@ Then:
 ```bash
 cd tools/devpost-gallery
 node capture-ui.mjs
-# → docs/media/viewer-three-column.png
+# → docs/media/viewer-three-column.png   (export-first step flow; filename historical)
 # → docs/media/receipt-expanded.png
 
-# policy-form.png is a landscape article card (same content, less scroll):
-node capture-architecture.mjs   # also refreshes architecture + workflow
+# architecture + export-first workflow + policy card:
+node capture-architecture.mjs
 ```
+
+The viewer is a **step flow** (policy → document → export → restore), not the
+old three-column dashboard. Update story captions if you re-screenshot.
 
 ## Gallery index
 

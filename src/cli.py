@@ -55,6 +55,40 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "export-receipt":
             args.output.write_text(json.dumps(service.export_receipt(args.id), indent=2, sort_keys=True) + "\n")
             _print({"output": str(args.output)})
+        elif args.command == "export-safe":
+            package = service.export_safe(args.engagement, args.document, args.task)
+            if args.bundle is not None:
+                args.bundle.write_text(json.dumps(package, indent=2, sort_keys=True) + "\n")
+            if package["exportable"]:
+                if args.output is not None:
+                    args.output.write_text(str(package["safe_text"]))
+                if args.mapping is not None:
+                    args.mapping.write_text(json.dumps(package["mapping"], indent=2, sort_keys=True) + "\n")
+            summary = {
+                "decision": package["decision"],
+                "exportable": package["exportable"],
+                "receipt_id": package["receipt_id"],
+                "error": package["error"],
+                "safe_chars": len(str(package["safe_text"])),
+                "mapping_entries": len(package["mapping"]),
+            }
+            if args.output is not None:
+                summary["output"] = str(args.output)
+            if args.mapping is not None:
+                summary["mapping"] = str(args.mapping)
+            if args.bundle is not None:
+                summary["bundle"] = str(args.bundle)
+            _print(summary)
+            if not package["exportable"]:
+                return 2
+        elif args.command == "rehydrate":
+            text = args.file.read_text() if args.file is not None else sys.stdin.read()
+            result = service.rehydrate(args.engagement, text)
+            if args.output is not None:
+                args.output.write_text(result["restored_text"])
+                _print({"output": str(args.output), "chars": len(result["restored_text"])})
+            else:
+                print(result["restored_text"], end="" if result["restored_text"].endswith("\n") else "\n")
         else:  # pragma: no cover - argparse dispatch guarantees a command.
             parser.error("unknown command")
     except (DocumentExtractionError, UnsupportedDocumentError, PreflightError) as error:
@@ -104,6 +138,29 @@ def _parser() -> argparse.ArgumentParser:
     receipt.add_argument("--id", required=True)
     receipt.add_argument("--output", type=Path, required=True)
 
+    export_safe = commands.add_parser(
+        "export-safe",
+        help="attack-verify and export a sanitized document for an external AI tool",
+    )
+    export_safe.add_argument("--engagement", required=True)
+    export_safe.add_argument("--document", required=True)
+    export_safe.add_argument(
+        "--task",
+        default=None,
+        help="optional check task; default verifies export fitness, not a content question",
+    )
+    export_safe.add_argument("--output", type=Path, help="write the redacted document text")
+    export_safe.add_argument("--mapping", type=Path, help="write placeholder→real mapping JSON")
+    export_safe.add_argument("--bundle", type=Path, help="write the full export package JSON")
+
+    rehydrate = commands.add_parser(
+        "rehydrate",
+        help="restore real names in pasted model output using local mappings",
+    )
+    rehydrate.add_argument("--engagement", required=True)
+    rehydrate.add_argument("--file", type=Path, help="sanitized model reply; omit to read stdin")
+    rehydrate.add_argument("--output", type=Path, help="write restored text; omit to print")
+
     evaluate = commands.add_parser("eval", help="run frozen evaluation scenarios")
     evaluate.add_argument("--output", type=Path, default=Path("eval/results.json"))
     return parser
@@ -130,3 +187,7 @@ def _preflight_json(result: Any) -> dict[str, object]:
 
 def _print(data: dict[str, object]) -> None:
     print(json.dumps(data, indent=2, sort_keys=True))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

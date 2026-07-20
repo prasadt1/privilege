@@ -110,8 +110,14 @@ privilege --mock init-engagement --name "My review" --policy-file policies/restr
 privilege --mock import   --engagement eng_... --file notes.pdf
 privilege --live preflight --engagement eng_... --document doc_... --task "Summarise the risks."
 privilege --live analyze   --engagement eng_... --document doc_... --task "Summarise the risks."
+privilege --live export-safe --engagement eng_... --document doc_... --output safe.txt --mapping map.json
+privilege --mock rehydrate --engagement eng_... --file model-reply.txt --output restored.txt
 privilege --mock status    --engagement eng_...
 ```
+
+`export-safe` runs the same attacker check, then writes the redacted document
+and a placeholder→real mapping for paste into ChatGPT, Claude, or another tool.
+Paste the model reply into `rehydrate` to put real names back on this machine.
 
 Files accepted: `.txt`, `.md`, `.pdf`, `.docx`, extracted locally. Spreadsheets,
 slides, and scanned images are refused with a clear "not supported yet".
@@ -119,8 +125,9 @@ slides, and scanned images are refused with a clear "not supported yet".
 **Local web UI** — `python -m src.server_http --db vault.sqlite3`, then
 `http://127.0.0.1:7077`. A policy form with templates (no raw JSON required), a
 live preview of exactly what the model would receive as policy, file upload, a
-three-column raw / sanitized / restored view, and the receipts feed. The header
-shows whether you are in Live, Mock, or unconfigured mode.
+three-column raw / sanitized / restored view, export for paste into another AI
+tool with local name restore, and the receipts feed. The header shows whether
+you are in Live, Mock, or unconfigured mode.
 
 **Thin MCP adapter** (optional) — see [`MCP.md`](MCP.md). Install extras with
 `pip install -e ".[mcp]"`, then `python -m src.server_mcp`. Exposes `preflight`,
