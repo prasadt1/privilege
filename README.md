@@ -122,9 +122,14 @@ live preview of exactly what the model would receive as policy, file upload, a
 three-column raw / sanitized / restored view, and the receipts feed. The header
 shows whether you are in Live, Mock, or unconfigured mode.
 
-**Thin MCP adapter** (optional) — `pip install -e ".[mcp]"`, then
-`python -m src.server_mcp`. Exposes `preflight`, `analyze`, `status`. It has
-**no** tool that returns raw text or mappings, by design.
+**Thin MCP adapter** (optional) — see [`MCP.md`](MCP.md). Install extras with
+`pip install -e ".[mcp]"`, then `python -m src.server_mcp`. Exposes `preflight`,
+`analyze`, `status`. It has no raw-text or mapping tools by design. Quick path:
+run [`install-mcp.command`](install-mcp.command) to print a ready-to-paste config
+for Codex / Cursor / Claude Desktop.
+
+**Local viewer, double-click:** macOS [`run.command`](run.command) · Windows
+[`run.bat`](run.bat) (still needs Python 3.11+ on the machine).
 
 ---
 
