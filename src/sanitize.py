@@ -220,9 +220,16 @@ def sanitize(text: str, mappings: dict[str, str]) -> SanitizeResult:
 
 
 def restore(sanitized_text: str, mappings: dict[str, str]) -> str:
-    """Restore declared placeholders locally; regex-masked PII is intentionally absent."""
+    """Restore declared placeholders locally; regex-masked PII is intentionally absent.
+
+    An alias and its canonical value share one placeholder. Restore to the
+    canonical value (the first real value mapped to a placeholder, since policy
+    puts protected values before aliases), not the shorter alias.
+    """
     result = sanitized_text
-    inverse = {placeholder: real for real, placeholder in mappings.items()}
+    inverse: dict[str, str] = {}
+    for real, placeholder in mappings.items():
+        inverse.setdefault(placeholder, real)
     for placeholder in sorted(inverse, key=len, reverse=True):
         result = result.replace(placeholder, inverse[placeholder])
     return result

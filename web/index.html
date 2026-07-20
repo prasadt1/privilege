@@ -5,147 +5,351 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Privilege</title>
   <style>
-    :root { color-scheme: dark; --ink: oklch(0.95 0.01 78); --muted: oklch(0.7 0.02 75); --canvas: oklch(0.18 0.018 62); --panel: oklch(0.23 0.02 62); --line: oklch(0.39 0.025 66); --amber: oklch(0.79 0.15 73); --red: oklch(0.7 0.17 28); }
-    * { box-sizing: border-box; } body { margin: 0; min-width: 320px; background: var(--canvas); color: var(--ink); font: 14px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
-    header { min-height: 76px; display: flex; align-items: center; justify-content: space-between; padding: 18px clamp(18px, 4vw, 56px); border-bottom: 1px solid var(--line); }
-    h1, h2, p { margin: 0; } h1 { font: 700 24px/1 system-ui, sans-serif; letter-spacing: 0; } h1 span { color: var(--amber); } h2 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
-    main { padding: 22px clamp(18px, 4vw, 56px) 42px; display: grid; gap: 22px; } .setup { display: grid; grid-template-columns: minmax(240px, .8fr) minmax(300px, 1.2fr); gap: 22px; }
-    section { border: 1px solid var(--line); background: var(--panel); padding: 18px; border-radius: 6px; } .section-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
-    label { display: grid; gap: 6px; color: var(--muted); margin: 10px 0; } input, textarea, button { font: inherit; } input, textarea { width: 100%; color: var(--ink); background: oklch(0.16 0.014 62); border: 1px solid var(--line); border-radius: 4px; padding: 9px; } textarea { min-height: 104px; resize: vertical; }
-    button { background: var(--amber); color: oklch(0.2 0.02 65); border: 0; border-radius: 4px; padding: 9px 12px; font-weight: 700; cursor: pointer; } button.secondary { background: transparent; color: var(--amber); border: 1px solid var(--amber); } button:disabled { opacity: .45; cursor: wait; }
-    .actions { display: flex; gap: 8px; flex-wrap: wrap; } .meta { color: var(--muted); overflow-wrap: anywhere; } .decision { color: var(--amber); font-weight: 800; }
-    .workspace { display: grid; gap: 22px; grid-template-columns: repeat(3, minmax(0, 1fr)); } .pane { min-height: 300px; display: grid; grid-template-rows: auto 1fr; gap: 12px; } pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; color: var(--ink); }
-    .feed { display: grid; gap: 0; padding: 0; } .feed .section-head { padding: 18px; margin: 0; border-bottom: 1px solid var(--line); } #receipts { max-height: 340px; overflow: auto; } .receipt { padding: 12px 18px; border-bottom: 1px solid var(--line); } .receipt:last-child { border-bottom: 0; }
-    .receipt summary { display: flex; justify-content: space-between; gap: 16px; cursor: pointer; align-items: baseline; } .receipt summary::marker { color: var(--muted); }
-    .receipt ul { margin: 12px 0 2px; padding-left: 18px; display: grid; gap: 7px; color: var(--muted); } .receipt li { overflow-wrap: anywhere; }
-    .step { color: var(--amber); font-variant-numeric: tabular-nums; } .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
-    .load-row { display: flex; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); } .load-row input { flex: 1; }
-    select { width: 100%; color: var(--ink); background: oklch(0.16 0.014 62); border: 1px solid var(--line); border-radius: 4px; padding: 9px; }
-    details summary { cursor: pointer; margin: 14px 0 4px; } code { color: var(--amber); }
-    .filebtn { display: inline-flex; align-items: center; background: transparent; color: var(--amber); border: 1px solid var(--amber); border-radius: 4px; padding: 9px 12px; font-weight: 700; cursor: pointer; margin: 0; }
-    .preview { margin: 16px 0 4px; padding: 12px 14px; background: oklch(0.16 0.014 62); border: 1px solid var(--line); border-radius: 4px; }
-    .preview h2 { margin-bottom: 8px; } .preview pre { color: var(--muted); font-size: 13px; }
-    .status { display: grid; gap: 4px; justify-items: end; text-align: right; }
-    .mode { font-weight: 700; } .mode.live { color: var(--amber); } .mode.mock { color: var(--muted); } .mode.unconfigured { color: var(--red); }
-    #mode-detail { color: var(--muted); font-size: 12px; max-width: 46ch; }
-    @media (max-width: 860px) { .status { justify-items: start; text-align: left; } #mode-detail { max-width: none; } }
-    #notice { min-height: 20px; color: var(--muted); } .error { color: var(--red); }
-    @media (max-width: 860px) { .setup, .workspace { grid-template-columns: 1fr; } header { align-items: flex-start; gap: 14px; flex-direction: column; } }
+    :root {
+      color-scheme: dark;
+      --ink: oklch(0.96 0.008 78); --muted: oklch(0.72 0.02 75); --faint: oklch(0.58 0.02 70);
+      --canvas: oklch(0.17 0.016 62); --panel: oklch(0.22 0.018 62); --sunk: oklch(0.15 0.014 62);
+      --line: oklch(0.34 0.02 66); --amber: oklch(0.82 0.15 74); --amber-ink: oklch(0.2 0.02 65);
+      --green: oklch(0.78 0.15 150); --red: oklch(0.7 0.17 28);
+      --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--canvas); color: var(--ink);
+      font: 16px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 780px; margin: 0 auto; padding: 28px clamp(16px, 4vw, 32px) 80px; }
+    h1, h2, h3, p { margin: 0; }
+    a { color: var(--amber); }
+
+    header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 8px; }
+    .brand h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; }
+    .brand h1 span { color: var(--amber); }
+    .brand p { color: var(--muted); font-size: 15px; margin-top: 4px; max-width: 46ch; }
+    .headright { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+    .mode-badge { font-size: 13px; font-weight: 700; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; }
+    .mode-badge.live { color: var(--amber); border-color: color-mix(in oklch, var(--amber) 45%, var(--line)); }
+    .mode-badge.mock { color: var(--muted); }
+    .mode-badge.unconfigured { color: var(--red); border-color: color-mix(in oklch, var(--red) 45%, var(--line)); }
+    .link-btn { background: none; border: 0; color: var(--amber); font: inherit; font-size: 14px; cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
+
+    .explainer { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; margin: 14px 0 6px; display: none; }
+    .explainer.open { display: block; }
+    .explainer h3 { font-size: 15px; color: var(--amber); margin-bottom: 8px; }
+    .explainer p { color: var(--muted); font-size: 15px; margin-bottom: 10px; }
+    .explainer ol { margin: 0; padding-left: 20px; color: var(--muted); font-size: 15px; }
+    .explainer li { margin: 5px 0; }
+
+    #notice { min-height: 22px; color: var(--muted); font-size: 14px; margin: 16px 0 4px; }
+    #notice.error { color: var(--red); }
+
+    .steps { display: grid; gap: 16px; margin-top: 8px; }
+    .step { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; transition: opacity .2s; }
+    .step.locked { opacity: 0.5; }
+    .step-head { display: flex; align-items: center; gap: 14px; padding: 20px 24px; }
+    .step.done .step-head { cursor: pointer; }
+    .num { flex: none; width: 30px; height: 30px; border-radius: 999px; display: grid; place-items: center;
+      background: var(--sunk); border: 1px solid var(--line); color: var(--muted); font-weight: 800; font-size: 15px; }
+    .step.active .num, .step.complete .num { background: var(--amber); border-color: var(--amber); color: var(--amber-ink); }
+    .step-title { font-size: 18px; font-weight: 700; }
+    .step-sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
+    .step-edit { margin-left: auto; color: var(--amber); font-size: 14px; display: none; }
+    .step.complete:not(.active) .step-edit { display: inline; }
+    .step:not(.locked):not(.active) .step-head { cursor: pointer; }
+    .step-body { padding: 4px 24px 24px; display: none; }
+    .step.active .step-body { display: block; }
+
+    label { display: grid; gap: 6px; color: var(--muted); font-size: 14px; margin: 14px 0; }
+    input, textarea, select { width: 100%; color: var(--ink); background: var(--sunk); border: 1px solid var(--line);
+      border-radius: 8px; padding: 11px 12px; font: 15px/1.5 var(--sans); }
+    textarea { resize: vertical; min-height: 84px; }
+    input:focus, textarea:focus, select:focus { outline: 2px solid color-mix(in oklch, var(--amber) 55%, transparent); outline-offset: 1px; border-color: var(--amber); }
+    .hint { color: var(--faint); font-size: 13px; margin-top: 6px; }
+
+    button { font: 600 15px var(--sans); border-radius: 8px; cursor: pointer; border: 0; }
+    .btn { background: var(--amber); color: var(--amber-ink); padding: 12px 18px; font-weight: 700; }
+    .btn.wide { width: 100%; padding: 15px; font-size: 16px; }
+    .btn.ghost { background: transparent; color: var(--amber); border: 1px solid var(--amber); }
+    .btn.small { padding: 8px 12px; font-size: 14px; }
+    button:disabled { opacity: .5; cursor: wait; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+
+    .preview { margin: 14px 0 2px; padding: 14px 16px; background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; }
+    .preview-label { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); margin-bottom: 8px; }
+    .preview pre { margin: 0; font: 13px/1.5 var(--mono); color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+    .preview pre.error { color: var(--red); }
+    details.adv { margin: 6px 0; }
+    details.adv > summary { cursor: pointer; color: var(--amber); font-size: 14px; list-style: none; }
+    details.adv > summary::-webkit-details-marker { display: none; }
+    details.adv > summary::before { content: "▸ "; }
+    details.adv[open] > summary::before { content: "▾ "; }
+    code { color: var(--amber); font-family: var(--mono); font-size: 0.9em; }
+
+    .filebtn { display: inline-flex; align-items: center; gap: 8px; background: var(--sunk); color: var(--ink);
+      border: 1px dashed var(--line); border-radius: 10px; padding: 16px; width: 100%; cursor: pointer; }
+    .filebtn strong { color: var(--amber); }
+    .filebtn input { display: none; }
+
+    .decision-badge { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 15px; padding: 6px 14px; border-radius: 999px; }
+    .decision-badge.allow { color: var(--green); background: color-mix(in oklch, var(--green) 14%, transparent); }
+    .decision-badge.transform { color: var(--amber); background: color-mix(in oklch, var(--amber) 14%, transparent); }
+    .decision-badge.block { color: var(--red); background: color-mix(in oklch, var(--red) 16%, transparent); }
+    .safebox { margin-top: 16px; background: var(--sunk); border: 1px solid color-mix(in oklch, var(--amber) 30%, var(--line)); border-radius: 12px; padding: 16px; }
+    .safebox pre { margin: 0; font: 14px/1.6 var(--mono); color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow: auto; }
+    .trust { margin-top: 12px; color: var(--muted); font-size: 14px; }
+    .trust strong { color: var(--ink); }
+
+    .fold { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; margin-top: 16px; padding: 0; }
+    .fold > summary { cursor: pointer; list-style: none; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
+    .fold > summary::-webkit-details-marker { display: none; }
+    .fold > summary::after { content: "Show"; color: var(--amber); font-weight: 600; font-size: 14px; }
+    .fold[open] > summary::after { content: "Hide"; }
+    .fold .fold-body { padding: 0 24px 22px; }
+    .fold .fold-body p.lead { color: var(--muted); font-size: 14px; margin-bottom: 8px; }
+
+    #receipts { display: grid; }
+    .receipt { border-top: 1px solid var(--line); padding: 14px 0; }
+    .receipt:first-child { border-top: 0; }
+    .receipt summary { cursor: pointer; display: flex; justify-content: space-between; gap: 16px; align-items: baseline; list-style: none; }
+    .receipt summary::-webkit-details-marker { display: none; }
+    .receipt .rd { font-weight: 800; }
+    .receipt .rd.allow { color: var(--green); } .receipt .rd.transform { color: var(--amber); } .receipt .rd.block { color: var(--red); }
+    .receipt .rmeta { color: var(--muted); font-size: 13px; text-align: right; }
+    .receipt ul { margin: 12px 0 2px; padding-left: 20px; color: var(--muted); font-size: 14px; display: grid; gap: 6px; }
+    .receipt li { overflow-wrap: anywhere; }
+    .empty { color: var(--faint); font-size: 14px; padding: 6px 0; }
   </style>
 </head>
 <body>
-  <header><div><h1>Privilege <span>/ local preflight</span></h1><p class="meta">Engagement facts stay local. OpenAI receives sanitized payloads only.</p></div><div class="status"><div id="mode" class="mode">checking mode...</div><div id="mode-detail"></div><div id="ledger" class="meta">Sent to OpenAI so far: 0</div></div></header>
-  <main>
-    <div id="notice" role="status">Start at step 1. Each ask you send builds on what OpenAI has already seen.</div>
-    <div class="setup">
-      <section><div class="section-head"><h2><span class="step">1.</span> Define what is confidential</h2><span id="engagement-id" class="meta">not created</span></div>
-        <label>Start from<select id="template"></select></label>
-        <label>Client or project<input id="name"></label>
-        <label>Names and terms that must stay confidential, one per line<textarea id="protected" rows="3"></textarea></label>
-        <label>What must not become inferable, one per line, in plain English<textarea id="rules" rows="3"></textarea></label>
-        <p class="hint">Write these normally, using real names. They are abstracted before OpenAI sees them. Preview below.</p>
-        <label>Why you are using AI on this<input id="purpose"></label>
-        <details><summary class="meta">Other names for the same thing, and raw policy</summary>
-          <label>Aliases, one per line as <code>short name = full name</code><textarea id="aliases" rows="2"></textarea></label>
-          <label>Policy JSON, edited automatically from the fields above<textarea id="policy" rows="4"></textarea></label>
-          <div class="actions"><button id="download" class="secondary" type="button">Download policy</button><label class="filebtn">Import policy<input id="import-policy" type="file" accept=".json" hidden></label></div>
-        </details>
-        <div class="preview"><h2>What OpenAI would receive as policy</h2><pre id="rules-preview">Add a rule above.</pre></div>
-        <button id="create">Create engagement</button>
-        <div class="load-row"><input id="load-id" placeholder="eng_... from a saved vault"><button id="load" class="secondary">Load existing</button></div>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>Privilege <span>·</span></h1>
+        <p>Make a client document safe to use with any AI. Real names never leave this machine.</p>
+      </div>
+      <div class="headright">
+        <span id="mode" class="mode-badge">checking…</span>
+        <button class="link-btn" id="what-toggle">What is this?</button>
+      </div>
+    </header>
+
+    <div class="explainer" id="explainer">
+      <h3>What Privilege does</h3>
+      <p>You want AI help on a confidential document, but you can't paste it into ChatGPT or Claude. Privilege masks the sensitive parts on your machine, then has GPT-5.6 <em>attack</em> the masked version to check whether the client is still identifiable. If it is, Privilege tightens it further. You get back a safe document to use with any AI, and restore the real names locally when the answer comes back.</p>
+      <ol>
+        <li>Say what must stay confidential (once per client).</li>
+        <li>Add a document.</li>
+        <li>Get a verified-safe version to paste into any AI tool.</li>
+        <li>Paste the AI's reply back to restore the real names.</li>
+      </ol>
+    </div>
+
+    <div id="notice" role="status"></div>
+
+    <div class="steps">
+
+      <!-- STEP 1 -->
+      <section class="step active" id="step-1">
+        <div class="step-head" data-goto="1">
+          <span class="num">1</span>
+          <div>
+            <div class="step-title">What must stay confidential</div>
+            <div class="step-sub" id="s1-sub">Set this up once per client.</div>
+          </div>
+          <span class="step-edit">Edit</span>
+        </div>
+        <div class="step-body">
+          <label>Start from a template<select id="template"></select></label>
+          <label>Client or project<input id="name"></label>
+          <label>Names and terms that must stay confidential (one per line)<textarea id="protected" rows="3"></textarea></label>
+          <label>What must not become inferable (one per line, plain English)<textarea id="rules" rows="3"></textarea></label>
+          <p class="hint">Write these with real names. Privilege abstracts them before any model sees the rules.</p>
+          <div class="preview">
+            <div class="preview-label">What a model would receive as your policy</div>
+            <pre id="rules-preview">Add a rule above.</pre>
+          </div>
+          <label>Why you're using AI on this<input id="purpose"></label>
+          <details class="adv">
+            <summary>Aliases, raw policy, import / export</summary>
+            <label>Aliases (one per line, <code>short = full name</code>)<textarea id="aliases" rows="2"></textarea></label>
+            <label>Policy JSON<textarea id="policy" rows="4"></textarea></label>
+            <div class="row">
+              <button class="btn ghost small" id="download" type="button">Download policy</button>
+              <label class="btn ghost small" style="margin:0">Import policy<input id="import-policy" type="file" accept=".json" hidden></label>
+            </div>
+          </details>
+          <div class="row">
+            <button class="btn" id="create">Create engagement</button>
+            <button class="link-btn" id="load-toggle" type="button">or load a saved one</button>
+          </div>
+          <div class="row" id="load-row" style="display:none">
+            <input id="load-id" placeholder="eng_… from a saved vault" style="flex:1">
+            <button class="btn ghost small" id="load">Load</button>
+          </div>
+          <span id="engagement-id" hidden></span>
+        </div>
       </section>
-      <section><div class="section-head"><h2><span class="step">2.</span> Add a document, then ask</h2><span id="document-id" class="meta">not imported</span></div>
-        <label>Upload a file, read on this machine only<input id="file" type="file" accept=".txt,.md,.pdf,.docx"></label>
-        <p class="hint">PDF, Word, text, and Markdown. Extraction runs locally, then the text appears below for you to check before anything is sent. Spreadsheets, slides, and scanned images are not supported yet.</p>
-        <label>Title<input id="title" value="engagement_notes.txt"></label>
-        <label>Document, never leaves this machine<textarea id="raw">Northwind Freight operates 14 depots. Baltic corridor volumes fell 22% year on year. Depot leases in that corridor expire in Q3. The board has not yet announced any change to the corridor.</textarea></label>
-        <label>What you want to ask the model<input id="task" value="Summarize the depot cost structure."></label>
-        <div class="actions"><button id="import">Import locally</button><button id="preflight" class="secondary">Check only</button><button id="analyze">Check, then send</button></div>
-        <p class="hint">Check only runs the attacker and stops. Check, then send also sends the approved payload and restores real names locally.</p>
+
+      <!-- STEP 2 -->
+      <section class="step locked" id="step-2">
+        <div class="step-head" data-goto="2">
+          <span class="num">2</span>
+          <div>
+            <div class="step-title">Add the document</div>
+            <div class="step-sub" id="s2-sub">The file stays on this machine.</div>
+          </div>
+          <span class="step-edit">Edit</span>
+        </div>
+        <div class="step-body">
+          <label class="filebtn">
+            <input id="file" type="file" accept=".txt,.md,.pdf,.docx">
+            <span><strong>Choose a file</strong> — PDF, Word, text or Markdown, read locally</span>
+          </label>
+          <p class="hint">Spreadsheets, slides and scanned images aren't supported yet. Or paste text below.</p>
+          <label>Title<input id="title" value="engagement_notes.txt"></label>
+          <label>Document<textarea id="raw" rows="4">Northwind Freight operates 14 depots. Baltic corridor volumes fell 22% year on year. Depot leases in that corridor expire in Q3. The board has not yet announced any change to the corridor.</textarea></label>
+          <div class="row"><button class="btn" id="import">Continue</button></div>
+        </div>
+      </section>
+
+      <!-- STEP 3 -->
+      <section class="step locked" id="step-3">
+        <div class="step-head" data-goto="3">
+          <span class="num">3</span>
+          <div>
+            <div class="step-title">Make it safe for AI</div>
+            <div class="step-sub">GPT-5.6 attacks the masked version, then hands you a safe document.</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <button class="btn wide" id="export-safe" type="button">Make it safe for AI →</button>
+          <p class="hint">Masks locally, then GPT-5.6 tries to re-identify the client. If it can, Privilege tightens it before giving you the document. Each export is recorded, so a later document is checked against everything already disclosed.</p>
+          <div id="export-result" style="display:none">
+            <div class="row" style="margin-top:18px"><span id="decision-badge" class="decision-badge"></span></div>
+            <div class="safebox" id="safebox">
+              <pre id="sanitized"></pre>
+              <div class="row" style="margin-top:12px" id="export-actions">
+                <button class="btn small" id="copy-safe" type="button">Copy safe text</button>
+                <button class="btn ghost small" id="download-safe" type="button">Download</button>
+              </div>
+            </div>
+            <p class="trust" id="trust"></p>
+          </div>
+          <div class="row"><button class="link-btn" id="ask-toggle" type="button">or ask through Privilege instead</button></div>
+        </div>
+      </section>
+
+      <!-- STEP 4 -->
+      <section class="step locked" id="step-4">
+        <div class="step-head" data-goto="4">
+          <span class="num">4</span>
+          <div>
+            <div class="step-title">Restore the real names</div>
+            <div class="step-sub">Paste the AI's reply — placeholders become real names, locally.</div>
+          </div>
+        </div>
+        <div class="step-body">
+          <label>Paste the reply from ChatGPT, Claude, or another tool<textarea id="model-reply" rows="4" placeholder="Paste the AI's answer here…"></textarea></label>
+          <div class="row"><button class="btn" id="rehydrate" type="button">Restore names</button></div>
+          <div class="safebox" id="restored-box" style="display:none"><pre id="restored"></pre></div>
+        </div>
       </section>
     </div>
-    <div class="workspace">
-      <section class="pane"><h2>Stays local</h2><pre id="raw-view">Import a document to see what never leaves this machine.</pre></section>
-      <section class="pane"><h2>Sent to OpenAI</h2><pre id="sanitized">Run a check to see exactly what would be transmitted.</pre></section>
-      <section class="pane"><h2>Restored locally</h2><pre id="restored">Real names are put back here, on this machine only.</pre></section>
-    </div>
-    <section class="feed"><div class="section-head"><h2>Receipts</h2><span id="decision" class="decision">Awaiting preflight</span></div><div id="receipts"><p class="meta" style="padding:18px">No receipts yet.</p></div></section>
-  </main>
+
+    <!-- Secondary: ask through Privilege -->
+    <details class="fold" id="ask-fold">
+      <summary>Ask through Privilege instead</summary>
+      <div class="fold-body">
+        <p class="lead">Prefer to keep everything here? Privilege can send an approved payload to OpenAI and restore the answer for you. Use Export above when you want to use ChatGPT or Claude yourself.</p>
+        <label>What you want to ask<input id="task" value="Summarize the depot cost structure."></label>
+        <div class="row">
+          <button class="btn ghost small" id="preflight">Check only</button>
+          <button class="btn small" id="analyze">Check, then send</button>
+        </div>
+        <div class="safebox" style="margin-top:14px"><pre id="raw-view">Add a document to see what never leaves this machine.</pre></div>
+      </div>
+    </details>
+
+    <!-- Receipts -->
+    <details class="fold" id="receipts-fold">
+      <summary>Receipts <span style="color:var(--faint);font-weight:400;margin-left:8px" id="ledger">· 0 disclosures recorded</span></summary>
+      <div class="fold-body">
+        <p class="lead">Every check and export writes a receipt: what the attacker inferred, and what was actually sent.</p>
+        <div id="receipts"><p class="empty">No receipts yet.</p></div>
+      </div>
+    </details>
+  </div>
+
   <script>
-    const state = { engagementId: null, documentId: null, raw: "" };
+    const state = { engagementId: null, documentId: null, raw: "", exportPackage: null };
     const $ = id => document.getElementById(id);
     const notice = (text, error=false) => { $("notice").textContent = text; $("notice").className = error ? "error" : ""; };
-    async function request(path, method="GET", body) { const response = await fetch(path, {method, headers: body ? {"Content-Type":"application/json"} : {}, body: body ? JSON.stringify(body) : undefined}); const data = await response.json(); if (!response.ok) throw new Error(data.error || "Request failed"); return data; }
-    // Starting points, not rules. Every engagement differs; these exist so the
-    // first policy takes a minute instead of a blank page.
+    const esc = v => String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    const cls = d => (d || "").toLowerCase();
+
+    // ---- step navigation ----
+    // A step is locked (dim, closed), active (open), or just unlocked (closed,
+    // clickable). 'complete' marks a finished step so its ✓ summary + Edit show.
+    // Advancing never collapses a step whose result you still need to read.
+    function activate(n) {
+      for (let i = 1; i <= 4; i++) $("step-" + i).classList.remove("active");
+      const el = $("step-" + n); el.classList.remove("locked"); el.classList.add("active");
+    }
+    const unlock = n => $("step-" + n).classList.remove("locked");
+    const complete = n => $("step-" + n).classList.add("complete");
+    document.querySelectorAll(".step-head[data-goto]").forEach(head => {
+      head.addEventListener("click", () => {
+        const n = Number(head.dataset.goto);
+        if (!$("step-" + n).classList.contains("locked")) activate(n);
+      });
+    });
+
+    function downloadBlob(filename, text, type="text/plain") {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(new Blob([text], {type}));
+      link.download = filename; link.click(); URL.revokeObjectURL(link.href);
+    }
+    async function request(path, method="GET", body) {
+      const r = await fetch(path, { method, headers: body ? {"Content-Type":"application/json"} : {}, body: body ? JSON.stringify(body) : undefined });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    // ---- policy templates + preview ----
     const TEMPLATES = {
-      "restructuring": {
-        label: "Restructuring or market exit",
-        name: "Northwind operating review",
-        protected: ["Northwind Freight", "Baltic corridor"],
-        aliases: {"Northwind": "Northwind Freight"},
-        rules: ["Northwind Freight withdrawing from the Baltic corridor is protected until the client announces it"],
-        purpose: "operating cost review"
-      },
-      "sale": {
-        label: "Sale process or M&A",
-        name: "Cinder Forge board preparation",
-        protected: ["Cinder Forge", "Project Ember"],
-        aliases: {},
-        rules: ["That Cinder Forge is running a sale process under Project Ember is protected", "Any buyer name or indicative valuation is protected"],
-        purpose: "board pack preparation"
-      },
-      "launch": {
-        label: "Product launch under embargo",
-        name: "Lumen Atlas launch readiness",
-        protected: ["Lumen Atlas", "Orchid Line"],
-        aliases: {},
-        rules: ["The launch date of the Orchid Line by Lumen Atlas is protected until the embargo lifts"],
-        purpose: "launch readiness review"
-      },
-      "blank": { label: "Blank policy", name: "", protected: [], aliases: {}, rules: [], purpose: "" }
+      restructuring: { label: "Restructuring or market exit", name: "Northwind operating review",
+        protected: ["Northwind Freight", "Baltic corridor"], aliases: {"Northwind": "Northwind Freight"},
+        rules: ["Northwind Freight withdrawing from the Baltic corridor is protected until the client announces it"], purpose: "operating cost review" },
+      sale: { label: "Sale process or M&A", name: "Cinder Forge board preparation",
+        protected: ["Cinder Forge", "Project Ember"], aliases: {},
+        rules: ["That Cinder Forge is running a sale process under Project Ember is protected", "Any buyer name or indicative valuation is protected"], purpose: "board pack preparation" },
+      launch: { label: "Product launch under embargo", name: "Lumen Atlas launch readiness",
+        protected: ["Lumen Atlas", "Orchid Line"], aliases: {},
+        rules: ["The launch date of the Orchid Line by Lumen Atlas is protected until the embargo lifts"], purpose: "launch readiness review" },
+      blank: { label: "Blank — start from scratch", name: "", protected: [], aliases: {}, rules: [], purpose: "" }
     };
-    const lines = value => value.split("\n").map(line => line.trim()).filter(Boolean);
-    function aliasesFromText(text) {
-      const map = {};
-      lines(text).forEach(line => { const [short, full] = line.split("="); if (short && full) map[short.trim()] = full.trim(); });
-      return map;
-    }
-    function aliasesToText(map) { return Object.entries(map || {}).map(([short, full]) => `${short} = ${full}`).join("\n"); }
-    function policyFromForm() {
-      return {
-        protected_values: lines($("protected").value),
-        aliases: aliasesFromText($("aliases").value),
-        abstract_rules: lines($("rules").value),
-        allowed_purpose: $("purpose").value.trim(),
-        strictness: "normal"
-      };
-    }
-    // Mirrors EngagementPolicy.to_abstract_for_judge: longest value first, so
-    // "Northwind Freight" is replaced before "Northwind".
+    const lines = v => v.split("\n").map(l => l.trim()).filter(Boolean);
+    const aliasesFromText = t => { const m = {}; lines(t).forEach(l => { const [s, f] = l.split("="); if (s && f) m[s.trim()] = f.trim(); }); return m; };
+    const aliasesToText = m => Object.entries(m || {}).map(([s, f]) => `${s} = ${f}`).join("\n");
+    const policyFromForm = () => ({ protected_values: lines($("protected").value), aliases: aliasesFromText($("aliases").value),
+      abstract_rules: lines($("rules").value), allowed_purpose: $("purpose").value.trim(), strictness: "normal" });
     function abstractPreview(policy) {
       const map = {};
-      policy.protected_values.forEach((value, index) => { map[value] = `[VALUE_${index + 1}]`; });
-      Object.entries(policy.aliases).forEach(([short, full]) => { if (map[full]) map[short] = map[full]; });
+      policy.protected_values.forEach((v, i) => { map[v] = `[VALUE_${i + 1}]`; });
+      Object.entries(policy.aliases).forEach(([s, f]) => { if (map[f]) map[s] = map[f]; });
       const keys = Object.keys(map).sort((a, b) => b.length - a.length);
-      return policy.abstract_rules.map(rule => keys.reduce((text, key) => text.split(key).join(map[key]), rule));
+      return policy.abstract_rules.map(rule => keys.reduce((t, k) => t.split(k).join(map[k]), rule));
     }
-    // Anything in a rule that is not on the protected list reaches OpenAI as
-    // written. Capitalised terms that survive abstraction are the likely
-    // operator mistake, so they are surfaced before the engagement is created.
-    const RULE_STOPWORDS = new Set(["A","An","The","Any","All","No","Not","Is","Are","Was","Were","This","That","These","Those","If","When","Until","Before","After","During","Q1","Q2","Q3","Q4"]);
-    function survivingNames(abstractedRules) {
+    const STOP = new Set(["A","An","The","Any","All","No","Not","Is","Are","Was","Were","This","That","These","Those","If","When","Until","Before","After","During","Q1","Q2","Q3","Q4"]);
+    function survivingNames(rules) {
       const found = new Set();
-      abstractedRules.forEach(rule => {
-        const withoutPlaceholders = rule.replace(/\[VALUE_\d+\]/g, " ");
-        for (const match of withoutPlaceholders.matchAll(/\b[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*/g)) {
-          const words = match[0].split(/\s+/);
-          // Leading articles absorb into the match ("The Meridian Capital"),
-          // so strip them rather than discarding the whole phrase.
-          while (words.length && RULE_STOPWORDS.has(words[0])) words.shift();
+      rules.forEach(rule => {
+        const s = rule.replace(/\[VALUE_\d+\]/g, " ");
+        for (const m of s.matchAll(/\b[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*/g)) {
+          const words = m[0].split(/\s+/);
+          while (words.length && STOP.has(words[0])) words.shift();
           if (!words.length) continue;
-          // A lone capitalised word opening the sentence is ordinary prose.
-          const startsRule = match.index === 0 || withoutPlaceholders.slice(0, match.index).trim() === "";
+          const startsRule = m.index === 0 || s.slice(0, m.index).trim() === "";
           if (words.length === 1 && startsRule) continue;
           found.add(words.join(" "));
         }
@@ -157,92 +361,178 @@
       $("policy").value = JSON.stringify(policy, null, 2);
       const preview = abstractPreview(policy);
       const leaking = survivingNames(preview);
-      let text = preview.length ? preview.map(rule => "- " + rule).join("\n") : "Add a rule above.";
-      if (leaking.length) text += `\n\nThese would be sent as written: ${leaking.join(", ")}. Add them above if they are confidential.`;
+      let text = preview.length ? preview.map(r => "· " + r).join("\n") : "Add a rule above.";
+      if (leaking.length) text += `\n\n⚠ These would be sent as written: ${leaking.join(", ")}. Add them to the confidential list above.`;
       $("rules-preview").textContent = text;
       $("rules-preview").className = leaking.length ? "error" : "";
     }
     function applyTemplate(key) {
-      const template = TEMPLATES[key];
-      $("name").value = template.name;
-      $("protected").value = template.protected.join("\n");
-      $("aliases").value = aliasesToText(template.aliases);
-      $("rules").value = template.rules.join("\n");
-      $("purpose").value = template.purpose;
+      const t = TEMPLATES[key];
+      $("name").value = t.name; $("protected").value = t.protected.join("\n");
+      $("aliases").value = aliasesToText(t.aliases); $("rules").value = t.rules.join("\n"); $("purpose").value = t.purpose;
       syncPolicy();
     }
-    $("template").innerHTML = Object.entries(TEMPLATES).map(([key, t]) => `<option value="${key}">${t.label}</option>`).join("");
-    $("template").onchange = event => applyTemplate(event.target.value);
+    $("template").innerHTML = Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}">${t.label}</option>`).join("");
+    $("template").onchange = e => applyTemplate(e.target.value);
     ["protected", "rules", "aliases", "purpose"].forEach(id => { $(id).oninput = syncPolicy; });
+    applyTemplate("restructuring");
+
+    $("what-toggle").onclick = () => $("explainer").classList.toggle("open");
+    $("load-toggle").onclick = () => { const r = $("load-row"); r.style.display = r.style.display === "none" ? "flex" : "none"; };
+    $("ask-toggle").onclick = () => { const f = $("ask-fold"); f.open = true; f.scrollIntoView({behavior:"smooth"}); };
+
     $("download").onclick = () => {
-      const blob = new Blob([JSON.stringify(policyFromForm(), null, 2)], {type: "application/json"});
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = ($("name").value.trim().replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "policy") + ".json";
-      link.click(); URL.revokeObjectURL(link.href);
+      downloadBlob(($("name").value.trim().replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "policy") + ".json", JSON.stringify(policyFromForm(), null, 2), "application/json");
       notice("Policy downloaded. It contains real names, so keep it local.");
     };
-    $("import-policy").onchange = async event => {
-      const file = event.target.files[0];
-      if (!file) return;
+    $("import-policy").onchange = async e => {
+      const f = e.target.files[0]; if (!f) return;
       try {
-        const policy = JSON.parse(await file.text());
-        $("protected").value = (policy.protected_values || []).join("\n");
-        $("aliases").value = aliasesToText(policy.aliases);
-        $("rules").value = (policy.abstract_rules || []).join("\n");
-        $("purpose").value = policy.allowed_purpose || "";
-        syncPolicy();
-        notice(`Loaded policy from ${file.name}.`);
-      } catch (error) { notice(`Could not read ${file.name}: ${error.message}`, true); }
-      event.target.value = "";
+        const p = JSON.parse(await f.text());
+        $("protected").value = (p.protected_values || []).join("\n"); $("aliases").value = aliasesToText(p.aliases);
+        $("rules").value = (p.abstract_rules || []).join("\n"); $("purpose").value = p.allowed_purpose || ""; syncPolicy();
+        notice(`Loaded policy from ${f.name}.`);
+      } catch (err) { notice(`Could not read ${f.name}: ${err.message}`, true); }
+      e.target.value = "";
     };
-    applyTemplate("restructuring");
+
+    // ---- mode ----
     (async () => {
-      try {
-        const mode = await request("/api/mode");
-        $("mode").textContent = mode.label;
-        $("mode").className = `mode ${mode.mode}`;
-        $("mode-detail").textContent = mode.detail;
-      } catch { $("mode").textContent = "mode unknown"; }
+      try { const m = await request("/api/mode"); $("mode").textContent = m.label; $("mode").className = `mode-badge ${m.mode}`; $("mode").title = m.detail; }
+      catch { $("mode").textContent = "mode unknown"; }
     })();
-    const esc = value => String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+    // ---- receipts ----
     function receiptCard(r) {
       const p = r.payload_json || {};
       const claims = Array.isArray(p.inferred_claims) ? p.inferred_claims : [];
       const priors = p.prior_disclosure_count ?? 0;
-      const rounds = p.repair_rounds ? `${p.repair_rounds} repair, ` : "";
-      const summary = `${rounds}${claims.length} inference${claims.length === 1 ? "" : "s"} against ${priors} prior disclosure${priors === 1 ? "" : "s"}`;
-      const body = claims.length
-        ? `<ul>${claims.map(c => `<li>${esc(c)}</li>`).join("")}</ul>`
-        : `<p class="hint">The attacker returned no inferences.</p>`;
-      return `<details class="receipt"><summary><span class="decision">${esc(r.decision)}</span><span class="meta">${esc(summary)}</span></summary>${body}</details>`;
+      const mode = p.mode === "export_safe" ? "export · " : "";
+      const rounds = p.repair_rounds ? `${p.repair_rounds} repair · ` : "";
+      const summary = `${mode}${rounds}${claims.length} inference${claims.length === 1 ? "" : "s"} vs ${priors} prior`;
+      const body = claims.length ? `<ul>${claims.map(c => `<li>${esc(c)}</li>`).join("")}</ul>` : `<p class="empty">No inferences returned.</p>`;
+      return `<details class="receipt"><summary><span class="rd ${cls(r.decision)}">${esc(r.decision)}</span><span class="rmeta">${esc(summary)}</span></summary>${body}</details>`;
     }
-    async function refresh() { if (!state.engagementId) return; const [status, receipts] = await Promise.all([request(`/api/status?engagement=${encodeURIComponent(state.engagementId)}`), request(`/api/receipts?engagement=${encodeURIComponent(state.engagementId)}`)]); $("ledger").textContent = `Sent to OpenAI so far: ${status.sanitized_disclosure_count}`; $("receipts").innerHTML = receipts.length ? receipts.map(receiptCard).join("") : '<p class="hint" style="padding:18px">No receipts yet. Every check writes one, whether it passes or not.</p>'; }
-    function requireIds() { if (!state.engagementId || !state.documentId) throw new Error("Create an engagement and import a document first."); }
-    $("create").onclick = async () => { try { const policy = JSON.parse($("policy").value); const data = await request("/api/engagements", "POST", {name: $("name").value, policy}); state.engagementId = data.engagement_id; $("engagement-id").textContent = data.engagement_id; notice("Engagement created locally."); await refresh(); } catch (error) { notice(error.message, true); } };
-    $("import").onclick = async () => { try { if (!state.engagementId) throw new Error("Create an engagement first."); state.raw = $("raw").value; const data = await request("/api/documents", "POST", {engagement_id: state.engagementId, title: $("title").value, raw_text: state.raw}); state.documentId = data.document_id; $("document-id").textContent = data.document_id; $("raw-view").textContent = state.raw; notice("Document imported into the local vault."); } catch (error) { notice(error.message, true); } };
-    async function run(path) { requireIds(); const data = await request(path, "POST", {engagement_id: state.engagementId, document_id: state.documentId, task: $("task").value}); const preflight = data.preflight || data; $("sanitized").textContent = preflight.final_payload || "Blocked before a sanitized payload could be formed."; $("decision").textContent = preflight.decision; if (data.analysis) $("restored").textContent = data.analysis.output || `Analysis blocked: ${data.analysis.error}`; await refresh(); notice(`${preflight.decision} receipt recorded.`); }
-    $("file").onchange = async event => {
-      const file = event.target.files[0];
-      if (!file) return;
+    async function refresh() {
+      if (!state.engagementId) return;
+      const [status, receipts] = await Promise.all([
+        request(`/api/status?engagement=${encodeURIComponent(state.engagementId)}`),
+        request(`/api/receipts?engagement=${encodeURIComponent(state.engagementId)}`)
+      ]);
+      $("ledger").textContent = `· ${status.sanitized_disclosure_count} disclosure${status.sanitized_disclosure_count === 1 ? "" : "s"} recorded`;
+      $("receipts").innerHTML = receipts.length ? receipts.map(receiptCard).join("") : '<p class="empty">No receipts yet.</p>';
+    }
+    const requireIds = () => { if (!state.engagementId || !state.documentId) throw new Error("Set up an engagement and add a document first."); };
+
+    // ---- step 1: engagement ----
+    $("create").onclick = async () => {
       try {
-        if (!state.engagementId) throw new Error("Create or load an engagement first.");
-        notice(`Reading ${file.name} locally...`);
-        const buffer = await file.arrayBuffer();
-        let binary = ""; const bytes = new Uint8Array(buffer);
-        for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
-        const data = await request("/api/upload", "POST", {engagement_id: state.engagementId, filename: file.name, content_base64: btoa(binary)});
-        state.documentId = data.document_id; state.raw = data.raw_text;
-        $("document-id").textContent = data.document_id;
-        $("title").value = file.name;
-        $("raw").value = data.raw_text;
-        $("raw-view").textContent = data.raw_text;
-        notice(`Extracted ${data.raw_text.length} characters from ${file.name}. Nothing has been sent yet.`);
-      } catch (error) { notice(error.message, true); event.target.value = ""; }
+        const policy = JSON.parse($("policy").value);
+        const data = await request("/api/engagements", "POST", { name: $("name").value, policy });
+        state.engagementId = data.engagement_id;
+        $("s1-sub").textContent = `✓ ${$("name").value || "Engagement"} — ${policy.protected_values.length} protected term${policy.protected_values.length === 1 ? "" : "s"}`;
+        complete(1); activate(2);
+        notice("Engagement created locally. Now add a document.");
+        await refresh();
+      } catch (e) { notice(e.message, true); }
     };
-    $("load").onclick = async () => { try { const id = $("load-id").value.trim(); if (!id) throw new Error("Paste an engagement id first."); state.engagementId = id; const documents = await request(`/api/documents?engagement=${encodeURIComponent(id)}`); if (documents.length) { state.documentId = documents[0].id; $("document-id").textContent = documents[0].id; } $("engagement-id").textContent = id; await refresh(); notice(`Loaded ${id}. Receipts below are from an earlier run.`); } catch (error) { state.engagementId = null; notice(error.message, true); } };
-    $("preflight").onclick = () => run("/api/preflight").catch(error => notice(error.message, true));
-    $("analyze").onclick = () => run("/api/analyze").catch(error => notice(error.message, true));
+    $("load").onclick = async () => {
+      try {
+        const id = $("load-id").value.trim(); if (!id) throw new Error("Paste an engagement id first.");
+        state.engagementId = id;
+        const docs = await request(`/api/documents?engagement=${encodeURIComponent(id)}`);
+        $("s1-sub").textContent = `✓ Loaded ${id}`; complete(1);
+        if (docs.length) { state.documentId = docs[0].id; $("s2-sub").textContent = `✓ ${docs[0].title}`; complete(2); unlock(3); activate(3); }
+        else activate(2);
+        await refresh();
+        notice(`Loaded ${id}. Open Receipts to see earlier runs.`);
+      } catch (e) { state.engagementId = null; notice(e.message, true); }
+    };
+
+    // ---- step 2: document ----
+    async function importText() {
+      state.raw = $("raw").value;
+      const data = await request("/api/documents", "POST", { engagement_id: state.engagementId, title: $("title").value, raw_text: state.raw });
+      state.documentId = data.document_id; $("raw-view").textContent = state.raw;
+      $("s2-sub").textContent = `✓ ${$("title").value}`;
+      complete(2); activate(3);
+      notice("Document added. Now make it safe for AI.");
+    }
+    $("import").onclick = () => importText().catch(e => notice(e.message, true));
+    $("file").onchange = async e => {
+      const f = e.target.files[0]; if (!f) return;
+      try {
+        if (!state.engagementId) throw new Error("Create an engagement first.");
+        notice(`Reading ${f.name} locally…`);
+        const buf = await f.arrayBuffer(); let bin = ""; const b = new Uint8Array(buf);
+        for (let i = 0; i < b.length; i++) bin += String.fromCharCode(b[i]);
+        const data = await request("/api/upload", "POST", { engagement_id: state.engagementId, filename: f.name, content_base64: btoa(bin) });
+        state.documentId = data.document_id; state.raw = data.raw_text;
+        $("title").value = f.name; $("raw").value = data.raw_text; $("raw-view").textContent = data.raw_text;
+        $("s2-sub").textContent = `✓ ${f.name}`;
+        complete(2); activate(3);
+        notice(`Extracted ${data.raw_text.length} characters from ${f.name}. Nothing has been sent.`);
+      } catch (err) { notice(err.message, true); e.target.value = ""; }
+    };
+
+    // ---- step 3: export ----
+    function showDecision(d) {
+      const b = $("decision-badge"); b.className = `decision-badge ${cls(d)}`;
+      const icon = d === "Block" ? "⛔" : d === "Transform" ? "✎" : "✓";
+      b.textContent = `${icon} ${d}`;
+    }
+    $("export-safe").onclick = async () => {
+      try {
+        requireIds();
+        notice("Masking locally, then attacking with GPT-5.6…");
+        const data = await request("/api/export-safe", "POST", { engagement_id: state.engagementId, document_id: state.documentId });
+        state.exportPackage = data;
+        $("export-result").style.display = "block";
+        showDecision(data.decision);
+        if (data.exportable) {
+          $("safebox").style.display = "block";
+          $("sanitized").textContent = data.safe_text;
+          $("export-actions").style.display = "flex";
+          $("trust").innerHTML = `<strong>Safe to send.</strong> GPT-5.6 could not re-identify the client from this text. Copy it into ChatGPT or Claude; the mapping to real names stays on this machine for step 4.`;
+          // Keep step 3 open so the safe document stays visible to copy; just
+          // unlock step 4 for when the reply comes back.
+          complete(3); unlock(4);
+        } else {
+          $("safebox").style.display = "none";
+          $("trust").innerHTML = `<strong>Not exported.</strong> ${esc(data.error || "The client stayed identifiable after masking.")} Tighten the policy or the document and try again.`;
+        }
+        await refresh();
+        notice(data.exportable ? `${data.decision}. Safe document ready — paste it into your AI, then restore names in step 4.` : `${data.decision}: export refused.`, !data.exportable);
+      } catch (e) { notice(e.message, true); }
+    };
+    $("copy-safe").onclick = async () => {
+      if (!state.exportPackage?.exportable) return;
+      try { await navigator.clipboard.writeText(state.exportPackage.safe_text); notice("Safe text copied. Paste it into ChatGPT, Claude, or another tool."); }
+      catch { notice("Copy failed — use Download instead.", true); }
+    };
+    $("download-safe").onclick = () => { if (state.exportPackage?.exportable) { downloadBlob("privilege-safe.txt", state.exportPackage.safe_text); notice("Safe text downloaded (placeholders, not real names)."); } };
+
+    // ---- step 4: rehydrate ----
+    $("rehydrate").onclick = async () => {
+      try {
+        if (!state.engagementId) throw new Error("Set up an engagement first.");
+        const text = $("model-reply").value; if (!text.trim()) throw new Error("Paste the AI's reply first.");
+        const data = await request("/api/rehydrate", "POST", { engagement_id: state.engagementId, text });
+        $("restored-box").style.display = "block"; $("restored").textContent = data.restored_text;
+        notice("Real names restored locally from the reply.");
+      } catch (e) { notice(e.message, true); }
+    };
+
+    // ---- secondary: ask through Privilege ----
+    async function ask(path) {
+      requireIds();
+      const data = await request(path, "POST", { engagement_id: state.engagementId, document_id: state.documentId, task: $("task").value });
+      const pf = data.preflight || data;
+      notice(`${pf.decision}. ${data.analysis ? (data.analysis.output ? "Answer restored locally." : "Analysis blocked.") : "Check only — nothing sent."}`);
+      await refresh();
+    }
+    $("preflight").onclick = () => ask("/api/preflight").catch(e => notice(e.message, true));
+    $("analyze").onclick = () => ask("/api/analyze").catch(e => notice(e.message, true));
   </script>
 </body>
 </html>
