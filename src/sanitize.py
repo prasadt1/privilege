@@ -22,48 +22,94 @@ PHONE_RE = re.compile(
 CARD_RE = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}\d(?!\d)")
 
 
-# Invisible characters that split a name without changing how it reads.
-_ZERO_WIDTH = frozenset("​‌‍⁠﻿­")
+# The same client name can be written so it reads as its declared form but does
+# not match it byte for byte: lowercased, split across a PDF line break, run
+# together, padded, in fullwidth or small-capital glyphs, spelled with a
+# Cyrillic or Greek lookalike letter, or carrying an invisible formatting
+# character. Matching runs on a folded form that neutralizes all of these, while
+# replacement splices the original string so unmatched text keeps its exact
+# bytes, accents, and layout.
+#
+# Two rules below are category based rather than enumerated, so they are
+# complete for their class instead of a list that a new code point can slip
+# past:
+#   - every format and control character (Cf, and Cc that is not whitespace) is
+#     removed, which covers zero-width spaces, bidi marks, the tag block, and
+#     invisible math operators;
+#   - every combining mark (Mn, Mc, Me) is removed, which strips accents and
+#     the marks used to disguise a letter.
+#
+# Cross-script lookalikes cannot be derived by category and are listed. This is
+# the common subset, not the full Unicode confusables table; see MASKING LIMITS
+# in the README.
+_STRIP_CATEGORIES = frozenset({"Cf", "Mn", "Mc", "Me"})
 
-# Cyrillic and Greek letters that render as Latin ones. A name containing any
-# of these reads identically to its ASCII form but never matched it. This is
-# the common subset, not the full Unicode confusables table.
-_CONFUSABLES = str.maketrans({
+_CONFUSABLES = {
+    # Cyrillic
     "А": "A", "В": "B", "Е": "E", "К": "K", "М": "M", "Н": "H", "О": "O",
     "Р": "P", "С": "C", "Т": "T", "У": "Y", "Х": "X", "І": "I", "Ј": "J",
-    "Ѕ": "S", "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y",
-    "х": "x", "і": "i", "ј": "j", "ѕ": "s", "ԁ": "d", "һ": "h",
+    "Ѕ": "S", "а": "a", "в": "b", "е": "e", "к": "k", "м": "m", "н": "h",
+    "о": "o", "р": "p", "с": "c", "т": "t", "у": "y", "х": "x", "і": "i",
+    "ј": "j", "ѕ": "s", "ԁ": "d", "һ": "h", "ԛ": "q", "ԝ": "w",
+    # Greek
     "Α": "A", "Β": "B", "Ε": "E", "Ζ": "Z", "Η": "H", "Ι": "I", "Κ": "K",
     "Μ": "M", "Ν": "N", "Ο": "O", "Ρ": "P", "Τ": "T", "Υ": "Y", "Χ": "X",
     "α": "a", "ε": "e", "ι": "i", "ο": "o", "ρ": "p", "τ": "t", "υ": "u",
-    "ν": "v", "κ": "k",
-})
+    "ν": "v", "κ": "k", "ϲ": "c", "ϳ": "j",
+    # Armenian
+    "օ": "o", "օ".upper(): "O", "ս": "u", "ց": "g", "ի": "h", "ո": "n",
+    # Cherokee (visually Latin capitals)
+    "Ꭺ": "A", "Ᏼ": "B", "Ꮯ": "C", "Ꭼ": "E", "Ꮐ": "G", "Ꭹ": "y", "Ꮋ": "H",
+    "Ꭻ": "J", "Ꮶ": "K", "Ꮮ": "L", "Ꮇ": "M", "Ꮲ": "P", "Ꮢ": "R", "Ꮪ": "S",
+    "Ꭲ": "I", "Ꭵ": "i", "Ꮤ": "W", "Ꮓ": "Z", "Ꮷ": "d", "Ꮙ": "V",
+    # Coptic
+    "Ⲥ": "C", "ⲥ": "c", "Ⲟ": "O", "ⲟ": "o", "Ⲣ": "P", "ⲣ": "p", "Ⲧ": "T",
+    "Ⲏ": "H", "Ⲕ": "K", "Ⲙ": "M", "Ⲛ": "N", "Ⲭ": "X",
+}
+
+
+def _latin_letter_from_name(char: str) -> str:
+    """Recover the Latin letter a stylised code point stands in for.
+
+    Small-capital, modifier, phonetic, and similar Latin-block glyphs decompose
+    to nothing under NFKD but their Unicode name ends in the letter they draw,
+    e.g. "LATIN LETTER SMALL CAPITAL A" or "LATIN SMALL LETTER SCRIPT G". This
+    catches that whole class without listing every code point.
+    """
+    name = unicodedata.name(char, "")
+    if not name.startswith("LATIN "):
+        return ""
+    last = name.rsplit(" ", 1)[-1]
+    return last.lower() if len(last) == 1 and last.isalpha() and last.isascii() else ""
 
 
 def _fold_char(char: str) -> str:
-    """Reduce one character to the form a reader would recognise it as.
+    """Reduce one character to the letter a reader would recognise it as.
 
-    Applies compatibility normalization (fullwidth and other presentation
-    forms), maps Cyrillic and Greek lookalikes to Latin, drops combining
-    marks, and removes zero-width characters entirely.
+    Returns "" for a character that carries no readable letter (an invisible
+    format character or a combining mark), otherwise the folded letters.
     """
-    if char in _ZERO_WIDTH:
+    category = unicodedata.category(char)
+    if category in _STRIP_CATEGORIES:
         return ""
-    folded = unicodedata.normalize("NFKC", char).translate(_CONFUSABLES)
-    without_marks = "".join(
-        component
-        for component in unicodedata.normalize("NFD", folded)
-        if unicodedata.category(component) != "Mn"
-    )
-    return unicodedata.normalize("NFC", without_marks)
+    if category == "Cc" and char not in "\t\n\r\f\v":
+        return ""
+    if char in _CONFUSABLES:
+        return _CONFUSABLES[char]
+    # NFKD turns fullwidth and accented letters into a base letter plus marks;
+    # the marks are dropped as combining characters on the recursion.
+    decomposed = unicodedata.normalize("NFKD", char)
+    if decomposed != char:
+        return "".join(_fold_char(component) for component in decomposed)
+    return _latin_letter_from_name(char) or char
 
 
 def _fold(text: str) -> tuple[str, list[int]]:
-    """Fold text for matching, keeping each folded character's source index.
+    """Fold text for matching, recording each folded character's source index.
 
     Matching happens on the folded form so a lookalike or an invisible
-    character cannot hide a declared name. Replacement happens on the original
-    string using these indices, so a document keeps its accents and spacing
+    character cannot hide a declared name. Replacement uses these indices to
+    splice the original string, so a document keeps its accents and spacing
     everywhere it was not masked.
     """
     folded: list[str] = []
@@ -106,23 +152,35 @@ def _mask_value(text: str, real_value: str, placeholder: str) -> tuple[str, int]
     so characters outside a match are returned exactly as written.
     """
     folded, source_index = _fold(text)
-    matches = list(_value_pattern(real_value).finditer(folded))
-    if not matches:
+    if not folded:
         return text, 0
 
     pieces: list[str] = []
     cursor = 0
-    for match in matches:
-        start = source_index[match.start()]
-        end = source_index[match.end() - 1] + 1
+    count = 0
+    for match in _value_pattern(real_value).finditer(folded):
+        lo, hi = match.start(), match.end()
+        # Require the match to begin and end on a source-character boundary. A
+        # single glyph can fold to several characters (℃ -> "°C"); matching part
+        # of one and splicing the whole glyph would delete the rest, e.g. the
+        # degree sign. Skip a match that starts or ends inside an expansion.
+        if lo > 0 and source_index[lo] == source_index[lo - 1]:
+            continue
+        if hi < len(source_index) and source_index[hi] == source_index[hi - 1]:
+            continue
+        start = source_index[lo]
+        end = source_index[hi - 1] + 1
         if start < cursor:
             # Overlapping spans cannot both be replaced; keep the first.
             continue
         pieces.append(text[cursor:start])
         pieces.append(placeholder)
         cursor = end
+        count += 1
+    if not count:
+        return text, 0
     pieces.append(text[cursor:])
-    return "".join(pieces), len(matches)
+    return "".join(pieces), count
 
 
 def sanitize(text: str, mappings: dict[str, str]) -> SanitizeResult:

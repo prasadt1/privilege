@@ -284,3 +284,47 @@ def test_value_of_only_invisible_characters_matches_nothing():
     """An empty folded value must not compile to a pattern that matches everywhere."""
     out = sanitize("nothing confidential here", {"​‍": "[V1]"}).text
     assert out == "nothing confidential here"
+
+
+@pytest.mark.parametrize(
+    "label,text,mapping",
+    [
+        ("cherokee-A", "Ꭺcme Corp", {"Acme Corp": "[V1]"}),
+        ("armenian-o", "Acme Cօrp", {"Acme Corp": "[V1]"}),
+        ("coptic-c", "Aⲥme Corp", {"Acme Corp": "[V1]"}),
+        ("small-caps-block", "ᴀᴄᴍᴇ ᴄᴏʀᴘ", {"Acme Corp": "[V1]"}),
+        ("ipa-script-g", "Northɡate", {"Northgate": "[V1]"}),
+        ("rlm-bidi", "Acme Co‏rp", {"Acme Corp": "[V1]"}),
+        ("lrm-bidi", "Ac‎me Corp", {"Acme Corp": "[V1]"}),
+        ("tag-block", "Ac\U000e0041me Corp", {"Acme Corp": "[V1]"}),
+        ("invisible-times", "Ac⁢me Corp", {"Acme Corp": "[V1]"}),
+        ("mongolian-vs", "Ac᠎me Corp", {"Acme Corp": "[V1]"}),
+    ],
+)
+def test_second_pass_lookalike_and_format_classes_are_masked(label, text, mapping):
+    """Regression for the pass-2 review: category-based folding closes whole
+    classes (all format/control chars, all combining marks) and broader
+    cross-script and Latin-block lookalikes, not a hand-picked list."""
+    out = sanitize(text, mapping).text
+    assert "[V1]" in out, f"{label} leaked: {out!r}"
+
+
+def test_multichar_glyph_expansion_does_not_over_mask():
+    """A single glyph folding to several characters must not have part of it
+    matched and the whole glyph spliced away. Masking "C" must leave 5℃ alone."""
+    out = sanitize("held at 5℃ overnight", {"C": "[V1]"}).text
+    assert out == "held at 5℃ overnight"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Müller GmbH reviewed Acme Corp",
+        "Le café d'Acme Corp",
+        "東京 office of Acme Corp",
+    ],
+)
+def test_folding_preserves_unmatched_text_exactly(text):
+    """Folding is for matching only; bytes outside a match are returned as-is."""
+    out = sanitize(text, {"Acme Corp": "[V1]"}).text
+    assert out.replace("[V1]", "Acme Corp") == text
