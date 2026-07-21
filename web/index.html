@@ -42,11 +42,14 @@
     #notice { min-height: 22px; color: var(--muted); font-size: 14px; margin: 16px 0 4px; }
     #notice.error { color: var(--red); }
 
-    .steps { display: grid; gap: 16px; margin-top: 8px; }
+    .safe-strip { position: sticky; top: 12px; z-index: 3; display: none; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0 2px; padding: 10px 12px; background: color-mix(in oklch, var(--panel) 88%, var(--amber) 12%); border: 1px solid color-mix(in oklch, var(--amber) 35%, var(--line)); border-radius: 10px; }
+    .safe-strip.show { display: flex; }
+    .safe-strip-label { color: var(--muted); font-size: 13px; margin-right: auto; }
+
+    .steps { display: grid; gap: 10px; margin-top: 8px; }
     .step { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; transition: opacity .2s; }
     .step.locked { opacity: 0.5; }
     .step-head { display: flex; align-items: center; gap: 14px; padding: 20px 24px; }
-    .step.done .step-head { cursor: pointer; }
     .num { flex: none; width: 30px; height: 30px; border-radius: 999px; display: grid; place-items: center;
       background: var(--sunk); border: 1px solid var(--line); color: var(--muted); font-weight: 800; font-size: 15px; }
     .step.active .num, .step.complete .num { background: var(--amber); border-color: var(--amber); color: var(--amber-ink); }
@@ -54,6 +57,10 @@
     .step-sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
     .step-edit { margin-left: auto; color: var(--amber); font-size: 14px; display: none; }
     .step.complete:not(.active) .step-edit { display: inline; }
+    .step.complete:not(.active) .step-head { padding: 12px 16px; gap: 10px; }
+    .step.complete:not(.active) .num { width: 24px; height: 24px; font-size: 12px; }
+    .step.complete:not(.active) .step-title { font-size: 16px; }
+    .step.complete:not(.active) .step-sub { font-size: 13px; }
     .step:not(.locked):not(.active) .step-head { cursor: pointer; }
     .step-body { padding: 4px 24px 24px; display: none; }
     .step.active .step-body { display: block; }
@@ -88,6 +95,19 @@
       border: 1px dashed var(--line); border-radius: 10px; padding: 16px; width: 100%; cursor: pointer; }
     .filebtn strong { color: var(--amber); }
     .filebtn input { display: none; }
+    .filebtn.has-file { border-style: solid; border-color: color-mix(in oklch, var(--amber) 40%, var(--line)); }
+    .file-selected { display: none; margin: 12px 0 4px; padding: 14px 16px; border-radius: 10px;
+      background: var(--sunk); border: 1px solid color-mix(in oklch, var(--amber) 35%, var(--line)); }
+    .file-selected.show { display: block; }
+    .file-selected .fname { font-weight: 700; color: var(--ink); }
+    .file-selected .fmeta { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .dl-toast { position: fixed; right: 24px; bottom: 24px; z-index: 50; max-width: min(420px, calc(100vw - 32px));
+      background: var(--panel); border: 1px solid color-mix(in oklch, var(--amber) 45%, var(--line));
+      border-radius: 12px; padding: 14px 16px; box-shadow: 0 12px 40px color-mix(in oklch, black 25%, transparent);
+      display: none; }
+    .dl-toast.show { display: block; }
+    .dl-toast strong { display: block; margin-bottom: 4px; }
+    .dl-toast span { color: var(--muted); font-size: 13px; }
 
     .decision-badge { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 15px; padding: 6px 14px; border-radius: 999px; }
     .decision-badge.allow { color: var(--green); background: color-mix(in oklch, var(--green) 14%, transparent); }
@@ -117,6 +137,48 @@
     .receipt ul { margin: 12px 0 2px; padding-left: 20px; color: var(--muted); font-size: 14px; display: grid; gap: 6px; }
     .receipt li { overflow-wrap: anywhere; }
     .empty { color: var(--faint); font-size: 14px; padding: 6px 0; }
+
+    .head-links { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
+    .resume-box, .attest-box { background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 12px 0; }
+    .resume-box strong, .attest-box strong { display: block; margin-bottom: 4px; }
+    .resume-box p, .attest-box p { color: var(--muted); font-size: 13px; margin: 0; }
+    .attest-box { border-color: color-mix(in oklch, var(--amber) 35%, var(--line)); }
+    .attest-check { display: flex; grid-template-columns: none; align-items: flex-start; gap: 10px; color: var(--ink); margin: 14px 0; }
+    .attest-check input { width: auto; flex: none; margin-top: 4px; }
+    .section-or { color: var(--faint); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; text-align: center; margin: 14px 0 8px; }
+
+    .flow-modal { position: fixed; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .flow-modal.open { display: flex; }
+    .flow-backdrop { position: absolute; inset: 0; background: color-mix(in oklch, var(--canvas) 55%, black 45%); }
+    .flow-dialog { position: relative; width: min(520px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px 22px 18px; }
+    .flow-dialog h2 { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 4px; }
+    .flow-dialog .flow-lead { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+    .flow-chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+    .flow-chip { appearance: none; margin: 0; padding: 10px 6px; border-radius: 10px; border: 1px solid var(--line); background: var(--sunk); color: var(--muted); font: 600 12px/1.2 var(--sans); cursor: pointer; text-align: center; }
+    .flow-chip.active { border-color: var(--amber); color: var(--amber); background: color-mix(in oklch, var(--amber) 12%, var(--sunk)); box-shadow: 0 0 0 1px color-mix(in oklch, var(--amber) 35%, transparent); animation: flow-pulse 1.4s ease-in-out infinite; }
+    @keyframes flow-pulse {
+      0%, 100% { box-shadow: 0 0 0 1px color-mix(in oklch, var(--amber) 25%, transparent); }
+      50% { box-shadow: 0 0 0 4px color-mix(in oklch, var(--amber) 18%, transparent); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .flow-chip.active { animation: none; }
+    }
+    .flow-stage { min-height: 118px; background: var(--sunk); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+    .flow-stage-kicker { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); margin-bottom: 8px; }
+    .flow-stage-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .flow-stage-body { color: var(--muted); font-size: 14px; }
+    .flow-stage-action { margin-top: 12px; display: inline-block; font: 700 13px var(--sans); color: var(--amber-ink); background: var(--amber); padding: 8px 12px; border-radius: 8px; }
+    .flow-modal.open .flow-stage-action { animation: flow-action-pulse 1.4s ease-in-out infinite; }
+    @keyframes flow-action-pulse {
+      0%, 100% { opacity: 0.88; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.03); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .flow-chip.active,
+      .flow-stage-action { animation: none !important; }
+    }
+    .flow-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .flow-controls .spacer { flex: 1; }
   </style>
 </head>
 <body>
@@ -124,26 +186,36 @@
     <header>
       <div class="brand">
         <h1>Privilege <span>·</span></h1>
-        <p>Make a client document safe to use with any AI. Real names never leave this machine.</p>
+        <p>Apply a client engagement policy before using a document with external AI.</p>
       </div>
       <div class="headright">
         <span id="mode" class="mode-badge">checking…</span>
-        <button class="link-btn" id="what-toggle">What is this?</button>
+        <div class="head-links">
+          <button class="link-btn" id="flow-toggle" type="button">See the flow</button>
+          <button class="link-btn" id="what-toggle" type="button">What is this?</button>
+        </div>
       </div>
     </header>
 
     <div class="explainer" id="explainer">
       <h3>What Privilege does</h3>
-      <p>You want AI help on a confidential document, but you can't paste it into ChatGPT or Claude. Privilege masks the sensitive parts on your machine, then has GPT-5.6 <em>attack</em> the masked version to check whether the client is still identifiable. If it is, Privilege tightens it further. You get back a safe document to use with any AI, and restore the real names locally when the answer comes back.</p>
+      <p>You want AI help on a confidential PDF, but you can't upload it as-is. Privilege masks the names and terms you declare, has GPT-5.6 <em>attack</em> the result against your engagement rules, and revises material matches. The result is scoped to that policy: undeclared names or facts may remain.</p>
       <ol>
         <li>Say what must stay confidential (once per client).</li>
-        <li>Add a document.</li>
-        <li>Get a verified-safe version to paste into any AI tool.</li>
+        <li>Upload the client PDF.</li>
+        <li>Get a PDF checked against that engagement policy — revise if the attacker found a material match.</li>
         <li>Paste the AI's reply back to restore the real names.</li>
       </ol>
     </div>
 
     <div id="notice" role="status"></div>
+    <div class="safe-strip" id="safe-strip">
+      <span class="safe-strip-label">PDF allowed under the selected engagement policy.</span>
+      <button class="btn small" id="download-pdf-strip" type="button">Download PDF</button>
+      <button class="btn ghost small" id="copy-safe-strip" type="button">Copy text</button>
+      <button class="btn ghost small" id="download-safe-strip" type="button">Download text</button>
+      <button class="btn ghost small" id="download-map-strip" type="button">Download mapping</button>
+    </div>
 
     <div class="steps">
 
@@ -158,16 +230,29 @@
           <span class="step-edit">Edit</span>
         </div>
         <div class="step-body">
+          <div class="resume-box" id="saved-box" hidden>
+            <strong>Resume a saved engagement</strong>
+            <p>Policies, mappings, prior disclosures and receipts stay in this local vault.</p>
+            <div class="row">
+              <select id="saved-engagement" style="flex:1"></select>
+              <button class="btn ghost small" id="resume" type="button">Resume</button>
+            </div>
+          </div>
+          <div class="section-or" id="new-engagement-label" hidden>or create a new engagement</div>
           <label>Start from a template<select id="template"></select></label>
           <label>Client or project<input id="name"></label>
           <label>Names and terms that must stay confidential (one per line)<textarea id="protected" rows="3"></textarea></label>
           <label>What must not become inferable (one per line, plain English)<textarea id="rules" rows="3"></textarea></label>
           <p class="hint">Write these with real names. Privilege abstracts them before any model sees the rules.</p>
-          <div class="preview">
-            <div class="preview-label">What a model would receive as your policy</div>
-            <pre id="rules-preview">Add a rule above.</pre>
-          </div>
-          <label>Why you're using AI on this<input id="purpose"></label>
+          <details class="adv">
+            <summary>Preview what a model would receive</summary>
+            <div class="preview">
+              <div class="preview-label">Abstracted policy sent to model</div>
+              <pre id="rules-preview">Add a rule above.</pre>
+            </div>
+          </details>
+          <label>Purpose of this AI use (saved as an audit note)<input id="purpose"></label>
+          <p class="hint">This explains the use in the local record; it is not an authorization rule.</p>
           <details class="adv">
             <summary>Aliases, raw policy, import / export</summary>
             <label>Aliases (one per line, <code>short = full name</code>)<textarea id="aliases" rows="2"></textarea></label>
@@ -177,8 +262,9 @@
               <label class="btn ghost small" style="margin:0">Import policy<input id="import-policy" type="file" accept=".json" hidden></label>
             </div>
           </details>
+          <p class="hint" id="setup-hint">Enter a client/project and at least one inferability rule.</p>
           <div class="row">
-            <button class="btn" id="create">Create engagement</button>
+            <button class="btn" id="create" disabled>Create engagement</button>
             <button class="link-btn" id="load-toggle" type="button">or load a saved one</button>
           </div>
           <div class="row" id="load-row" style="display:none">
@@ -200,14 +286,31 @@
           <span class="step-edit">Edit</span>
         </div>
         <div class="step-body">
-          <label class="filebtn">
-            <input id="file" type="file" accept=".txt,.md,.pdf,.docx">
-            <span><strong>Choose a file</strong> — PDF, Word, text or Markdown, read locally</span>
+          <label class="filebtn" id="filebtn">
+            <input id="file" type="file" accept=".pdf">
+            <span id="filebtn-label"><strong>Upload client PDF</strong> — read and anonymized locally (Word/PPT later)</span>
           </label>
-          <p class="hint">Spreadsheets, slides and scanned images aren't supported yet. Or paste text below.</p>
-          <label>Title<input id="title" value="engagement_notes.txt"></label>
-          <label>Document<textarea id="raw" rows="4">Northwind Freight operates 14 depots. Baltic corridor volumes fell 22% year on year. Depot leases in that corridor expire in Q3. The board has not yet announced any change to the corridor.</textarea></label>
-          <div class="row"><button class="btn" id="import">Continue</button></div>
+          <div class="file-selected" id="file-selected" aria-live="polite">
+            <div class="fname" id="file-selected-name">client-brief.pdf</div>
+            <div class="fmeta" id="file-selected-meta">Extracted locally on this machine.</div>
+          </div>
+          <p class="hint">Tonight’s path is PDF in → anonymized PDF out. Paste text below only for a quick text trial.</p>
+          <div class="dl-toast" id="dl-toast" role="status"><strong id="dl-toast-title">Downloaded</strong><span id="dl-toast-body"></span></div>
+          <label>Title<input id="title" value="client-brief.pdf"></label>
+          <label>Or paste text<textarea id="raw" rows="3" placeholder="Optional — prefer Upload client PDF above"></textarea></label>
+          <div class="row"><button class="btn" id="import">Continue with pasted text</button></div>
+          <div class="attest-box" id="attest-box" hidden>
+            <strong>Confirm the document assignment</strong>
+            <p id="attest-context"></p>
+            <label class="attest-check">
+              <input id="attest-check" type="checkbox">
+              <span id="attest-statement">I confirm this document belongs to the selected engagement and that its policy contains the names, aliases and facts I expect Privilege to protect.</span>
+            </label>
+            <p>Privilege does not verify document ownership. A wrong document can produce a meaningless policy result.</p>
+            <div class="row">
+              <button class="btn" id="attest-document" type="button" disabled>Confirm and continue</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -216,20 +319,30 @@
         <div class="step-head" data-goto="3">
           <span class="num">3</span>
           <div>
-            <div class="step-title">Make it safe for AI</div>
-            <div class="step-sub">GPT-5.6 attacks the masked version, then hands you a safe document.</div>
+            <div class="step-title">Anonymize the PDF</div>
+            <div class="step-sub" id="s3-sub">Mask locally, attack with GPT-5.6, download a safer PDF.</div>
           </div>
+          <span class="step-edit">Edit</span>
         </div>
         <div class="step-body">
-          <button class="btn wide" id="export-safe" type="button">Make it safe for AI →</button>
-          <p class="hint">Masks locally, then GPT-5.6 tries to re-identify the client. If it can, Privilege tightens it before giving you the document. Each export is recorded, so a later document is checked against everything already disclosed.</p>
+          <button class="btn wide" id="export-safe" type="button">Anonymize PDF →</button>
+          <p class="hint" id="s3-hint">Privilege masks declared terms locally, then GPT-5.6 tests the result against your engagement rules. The decision does not cover names or facts you did not declare.</p>
           <div id="export-result" style="display:none">
-            <div class="row" style="margin-top:18px"><span id="decision-badge" class="decision-badge"></span></div>
+            <div class="row" style="margin-top:18px"><span id="decision-badge" class="decision-badge"></span>
+              <span id="pass-label" style="color:var(--muted);font-size:13px"></span>
+            </div>
+            <div id="findings" style="display:none;margin-top:14px">
+              <div class="preview-label">What the attacker still found</div>
+              <ul id="findings-list" style="margin:8px 0 0;padding-left:20px;color:var(--muted);font-size:14px"></ul>
+            </div>
             <div class="safebox" id="safebox">
               <pre id="sanitized"></pre>
               <div class="row" style="margin-top:12px" id="export-actions">
-                <button class="btn small" id="copy-safe" type="button">Copy safe text</button>
-                <button class="btn ghost small" id="download-safe" type="button">Download</button>
+                <button class="btn small" id="download-pdf" type="button">Download anonymized PDF</button>
+                <button class="btn ghost small" id="revise-pdf" type="button">Attack again → revise PDF</button>
+                <button class="btn ghost small" id="copy-safe" type="button">Copy text</button>
+                <button class="btn ghost small" id="download-safe" type="button">Download text</button>
+                <button class="btn ghost small" id="download-map" type="button">Download mapping</button>
               </div>
             </div>
             <p class="trust" id="trust"></p>
@@ -246,6 +359,7 @@
             <div class="step-title">Restore the real names</div>
             <div class="step-sub">Paste the AI's reply — placeholders become real names, locally.</div>
           </div>
+          <span class="step-edit">Edit</span>
         </div>
         <div class="step-body">
           <label>Paste the reply from ChatGPT, Claude, or another tool<textarea id="model-reply" rows="4" placeholder="Paste the AI's answer here…"></textarea></label>
@@ -279,20 +393,55 @@
     </details>
   </div>
 
+  <div class="flow-modal" id="flow-modal" hidden aria-hidden="true">
+    <div class="flow-backdrop" id="flow-backdrop"></div>
+    <div class="flow-dialog" role="dialog" aria-modal="true" aria-labelledby="flow-title">
+      <h2 id="flow-title">How Privilege works</h2>
+      <p class="flow-lead">A quick walkthrough of the four steps — nothing is sent from this demo.</p>
+      <div class="flow-chips" id="flow-chips" role="tablist" aria-label="Flow steps">
+        <button type="button" class="flow-chip" data-step="0" role="tab">1 Policy</button>
+        <button type="button" class="flow-chip" data-step="1" role="tab">2 Upload</button>
+        <button type="button" class="flow-chip" data-step="2" role="tab">3 Export</button>
+        <button type="button" class="flow-chip" data-step="3" role="tab">4 Restore</button>
+      </div>
+      <div class="flow-stage" id="flow-stage">
+        <div class="flow-stage-kicker" id="flow-kicker"></div>
+        <div class="flow-stage-title" id="flow-stage-title"></div>
+        <div class="flow-stage-body" id="flow-stage-body"></div>
+        <span class="flow-stage-action" id="flow-stage-action"></span>
+      </div>
+      <div class="flow-controls">
+        <button class="btn ghost small" id="flow-pause" type="button">Pause</button>
+        <button class="btn ghost small" id="flow-replay" type="button">Replay</button>
+        <span class="spacer"></span>
+        <button class="btn small" id="flow-close" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    const state = { engagementId: null, documentId: null, raw: "", exportPackage: null };
+    const state = {
+      engagementId: null,
+      engagementName: "",
+      documentId: null,
+      documentTitle: "",
+      documentAttested: false,
+      raw: "",
+      exportPackage: null,
+      exportPass: 0,
+    };
     const $ = id => document.getElementById(id);
     const notice = (text, error=false) => { $("notice").textContent = text; $("notice").className = error ? "error" : ""; };
     const esc = v => String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
     const cls = d => (d || "").toLowerCase();
 
     // ---- step navigation ----
-    // A step is locked (dim, closed), active (open), or just unlocked (closed,
-    // clickable). 'complete' marks a finished step so its ✓ summary + Edit show.
-    // Advancing never collapses a step whose result you still need to read.
     function activate(n) {
-      for (let i = 1; i <= 4; i++) $("step-" + i).classList.remove("active");
-      const el = $("step-" + n); el.classList.remove("locked"); el.classList.add("active");
+      for (let i = 1; i <= 4; i++) $("step-" + i).classList.remove("active", "editing");
+      const el = $("step-" + n);
+      el.classList.remove("locked");
+      el.classList.add("active");
+      el.querySelector(".step-head")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
     const unlock = n => $("step-" + n).classList.remove("locked");
     const complete = n => $("step-" + n).classList.add("complete");
@@ -302,11 +451,42 @@
         if (!$("step-" + n).classList.contains("locked")) activate(n);
       });
     });
+    const safeStrip = $("safe-strip");
+    const hideSafeStrip = () => safeStrip.classList.remove("show");
+    const showSafeStrip = () => safeStrip.classList.add("show");
 
+    function showDownloadToast(filename, detail) {
+      $("dl-toast-title").textContent = `Downloaded ${filename}`;
+      $("dl-toast-body").textContent = detail || "Saved to your downloads folder.";
+      $("dl-toast").classList.add("show");
+      clearTimeout(showDownloadToast._t);
+      showDownloadToast._t = setTimeout(() => $("dl-toast").classList.remove("show"), 6000);
+    }
     function downloadBlob(filename, text, type="text/plain") {
       const link = document.createElement("a");
       link.href = URL.createObjectURL(new Blob([text], {type}));
       link.download = filename; link.click(); URL.revokeObjectURL(link.href);
+      showDownloadToast(filename, "Keep mapping and policy files local.");
+    }
+    function downloadBase64(filename, b64, mime) {
+      const bin = atob(b64); const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(new Blob([bytes], { type: mime }));
+      link.download = filename; link.click(); URL.revokeObjectURL(link.href);
+      showDownloadToast(filename, "Anonymized PDF — allowed only under the selected engagement policy.");
+    }
+    function showSelectedFile(name, meta) {
+      $("file-selected-name").textContent = name;
+      $("file-selected-meta").textContent = meta;
+      $("file-selected").classList.add("show");
+      $("filebtn").classList.add("has-file");
+      $("filebtn-label").innerHTML = `<strong>Replace PDF</strong> — currently ${esc(name)}`;
+    }
+    function clearSelectedFile() {
+      $("file-selected").classList.remove("show");
+      $("filebtn").classList.remove("has-file");
+      $("filebtn-label").innerHTML = "<strong>Upload client PDF</strong> — read and anonymized locally (Word/PPT later)";
     }
     async function request(path, method="GET", body) {
       const r = await fetch(path, { method, headers: body ? {"Content-Type":"application/json"} : {}, body: body ? JSON.stringify(body) : undefined });
@@ -317,22 +497,32 @@
 
     // ---- policy templates + preview ----
     const TEMPLATES = {
-      restructuring: { label: "Restructuring or market exit", name: "Northwind operating review",
-        protected: ["Northwind Freight", "Baltic corridor"], aliases: {"Northwind": "Northwind Freight"},
-        rules: ["Northwind Freight withdrawing from the Baltic corridor is protected until the client announces it"], purpose: "operating cost review" },
-      sale: { label: "Sale process or M&A", name: "Cinder Forge board preparation",
-        protected: ["Cinder Forge", "Project Ember"], aliases: {},
-        rules: ["That Cinder Forge is running a sale process under Project Ember is protected", "Any buyer name or indicative valuation is protected"], purpose: "board pack preparation" },
-      launch: { label: "Product launch under embargo", name: "Lumen Atlas launch readiness",
-        protected: ["Lumen Atlas", "Orchid Line"], aliases: {},
-        rules: ["The launch date of the Orchid Line by Lumen Atlas is protected until the embargo lifts"], purpose: "launch readiness review" },
-      blank: { label: "Blank — start from scratch", name: "", protected: [], aliases: {}, rules: [], purpose: "" }
+      restructuring: { label: "Restructuring or market exit",
+        rules: ["[VALUE_1] restructuring, market-exit, workforce or footprint decisions are protected until publicly announced"],
+        purpose: "operating or restructuring review" },
+      sale: { label: "Sale process or M&A",
+        rules: ["[VALUE_1] running a sale process is protected", "Buyer identities and indicative valuation are protected"],
+        purpose: "sale-process or board review" },
+      launch: { label: "Product launch under embargo",
+        rules: ["[VALUE_1] launch timing, product details and embargoed plans are protected until public"],
+        purpose: "launch readiness review" },
+      blank: { label: "Blank — start from scratch", rules: [], purpose: "" }
     };
     const lines = v => v.split("\n").map(l => l.trim()).filter(Boolean);
     const aliasesFromText = t => { const m = {}; lines(t).forEach(l => { const [s, f] = l.split("="); if (s && f) m[s.trim()] = f.trim(); }); return m; };
     const aliasesToText = m => Object.entries(m || {}).map(([s, f]) => `${s} = ${f}`).join("\n");
-    const policyFromForm = () => ({ protected_values: lines($("protected").value), aliases: aliasesFromText($("aliases").value),
-      abstract_rules: lines($("rules").value), allowed_purpose: $("purpose").value.trim(), strictness: "normal" });
+    const policyFromForm = () => {
+      const protectedValues = lines($("protected").value);
+      const name = $("name").value.trim();
+      if (name && !protectedValues.includes(name)) protectedValues.push(name);
+      return {
+        protected_values: protectedValues,
+        aliases: aliasesFromText($("aliases").value),
+        abstract_rules: lines($("rules").value),
+        allowed_purpose: $("purpose").value.trim(),
+        strictness: "normal",
+      };
+    };
     function abstractPreview(policy) {
       const map = {};
       policy.protected_values.forEach((v, i) => { map[v] = `[VALUE_${i + 1}]`; });
@@ -365,21 +555,185 @@
       if (leaking.length) text += `\n\n⚠ These would be sent as written: ${leaking.join(", ")}. Add them to the confidential list above.`;
       $("rules-preview").textContent = text;
       $("rules-preview").className = leaking.length ? "error" : "";
+      const valid = Boolean($("name").value.trim() && policy.protected_values.length && policy.abstract_rules.length);
+      $("create").disabled = !valid;
+      $("setup-hint").textContent = valid
+        ? "Ready. The client/project name will always be protected."
+        : "Enter a client/project and at least one inferability rule.";
     }
     function applyTemplate(key) {
       const t = TEMPLATES[key];
-      $("name").value = t.name; $("protected").value = t.protected.join("\n");
-      $("aliases").value = aliasesToText(t.aliases); $("rules").value = t.rules.join("\n"); $("purpose").value = t.purpose;
+      $("rules").value = t.rules.join("\n");
+      $("purpose").value = t.purpose;
       syncPolicy();
     }
     $("template").innerHTML = Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}">${t.label}</option>`).join("");
     $("template").onchange = e => applyTemplate(e.target.value);
-    ["protected", "rules", "aliases", "purpose"].forEach(id => { $(id).oninput = syncPolicy; });
+    ["name", "protected", "rules", "aliases", "purpose"].forEach(id => { $(id).oninput = syncPolicy; });
     applyTemplate("restructuring");
 
     $("what-toggle").onclick = () => $("explainer").classList.toggle("open");
     $("load-toggle").onclick = () => { const r = $("load-row"); r.style.display = r.style.display === "none" ? "flex" : "none"; };
     $("ask-toggle").onclick = () => { const f = $("ask-fold"); f.open = true; f.scrollIntoView({behavior:"smooth"}); };
+
+    function fillPolicyForm(detail) {
+      const p = detail.policy || {};
+      $("name").value = detail.name || "";
+      $("protected").value = (p.protected_values || []).join("\n");
+      $("aliases").value = aliasesToText(p.aliases || {});
+      $("rules").value = (p.abstract_rules || []).join("\n");
+      $("purpose").value = p.allowed_purpose || "";
+      syncPolicy();
+    }
+    function resetDocumentFlow() {
+      state.documentId = null;
+      state.documentTitle = "";
+      state.documentAttested = false;
+      state.exportPackage = null;
+      state.exportPass = 0;
+      for (let i = 2; i <= 4; i++) {
+        const step = $("step-" + i);
+        step.classList.remove("active", "complete");
+        step.classList.add("locked");
+      }
+      $("attest-box").hidden = true;
+      $("attest-check").checked = false;
+      $("attest-document").disabled = true;
+      $("export-result").style.display = "none";
+      $("restored-box").style.display = "none";
+      clearSelectedFile();
+      hideSafeStrip();
+      activate(2);
+    }
+    async function resumeEngagement(id) {
+      if (!id) throw new Error("Choose a saved engagement first.");
+      const detail = await request(`/api/engagement?engagement=${encodeURIComponent(id)}`);
+      state.engagementId = detail.id;
+      state.engagementName = detail.name;
+      fillPolicyForm(detail);
+      $("s1-sub").textContent = `✓ ${detail.name} — saved locally`;
+      complete(1);
+      localStorage.setItem("privilege.lastEngagementId", detail.id);
+      resetDocumentFlow();
+      await refresh();
+      notice(`Resumed ${detail.name}. Upload the next client PDF.`);
+    }
+    async function refreshSavedEngagements() {
+      try {
+        const saved = await request("/api/engagements");
+        $("saved-box").hidden = !saved.length;
+        $("new-engagement-label").hidden = !saved.length;
+        if (!saved.length) return;
+        $("saved-engagement").innerHTML = saved.map(item =>
+          `<option value="${esc(item.id)}">${esc(item.name)} · ${item.document_count} document${item.document_count === 1 ? "" : "s"}</option>`
+        ).join("");
+        const last = localStorage.getItem("privilege.lastEngagementId");
+        if (last && saved.some(item => item.id === last)) $("saved-engagement").value = last;
+      } catch {
+        $("saved-box").hidden = true;
+        $("new-engagement-label").hidden = true;
+      }
+    }
+    $("resume").onclick = () => resumeEngagement($("saved-engagement").value).catch(e => notice(e.message, true));
+    refreshSavedEngagements();
+
+    // ---- flow walkthrough modal (demo only; no vault calls) ----
+    const FLOW_STEPS = [
+      {
+        kicker: "Step 1 of 4",
+        title: "What must stay confidential",
+        body: "Name the client terms once per engagement. Privilege keeps the real names on this machine.",
+        action: "Create engagement",
+      },
+      {
+        kicker: "Step 2 of 4",
+        title: "Upload the client PDF",
+        body: "The PDF is read locally. Layout is flattened to text for anonymization — Word/PPT come next.",
+        action: "Upload client PDF",
+      },
+      {
+        kicker: "Step 3 of 4",
+        title: "Anonymize → attack → PDF out",
+        body: "Privilege masks declared terms and GPT-5.6 attacks against your selected policy. Material matches are revised before PDF export.",
+        action: "Anonymize PDF →",
+      },
+      {
+        kicker: "Step 4 of 4",
+        title: "Restore names from the analysis",
+        body: "After any AI answers, paste the reply to restore real names locally.",
+        action: "Restore names",
+      },
+    ];
+    const flowModal = $("flow-modal");
+    const flowReduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let flowIndex = 0;
+    let flowTimer = null;
+    let flowPlaying = false;
+    function flowRender() {
+      const step = FLOW_STEPS[flowIndex];
+      $("flow-kicker").textContent = step.kicker;
+      $("flow-stage-title").textContent = step.title;
+      $("flow-stage-body").textContent = step.body;
+      $("flow-stage-action").textContent = step.action;
+      document.querySelectorAll(".flow-chip").forEach((chip, i) => {
+        chip.classList.toggle("active", i === flowIndex);
+        chip.setAttribute("aria-selected", i === flowIndex ? "true" : "false");
+      });
+      $("flow-pause").textContent = flowPlaying ? "Pause" : "Play";
+    }
+    function flowStopTimer() {
+      if (flowTimer) { clearInterval(flowTimer); flowTimer = null; }
+    }
+    function flowStartTimer() {
+      flowStopTimer();
+      if (flowReduceMotion()) { flowPlaying = false; flowRender(); return; }
+      flowPlaying = true;
+      flowTimer = setInterval(() => {
+        flowIndex = (flowIndex + 1) % FLOW_STEPS.length;
+        flowRender();
+      }, 2500);
+      flowRender();
+    }
+    function openFlow() {
+      flowModal.hidden = false;
+      flowModal.classList.add("open");
+      flowModal.setAttribute("aria-hidden", "false");
+      flowIndex = 0;
+      if (flowReduceMotion()) { flowPlaying = false; flowStopTimer(); flowRender(); }
+      else flowStartTimer();
+      $("flow-close").focus();
+    }
+    function closeFlow() {
+      flowStopTimer();
+      flowPlaying = false;
+      flowModal.classList.remove("open");
+      flowModal.hidden = true;
+      flowModal.setAttribute("aria-hidden", "true");
+      $("flow-toggle").focus();
+    }
+    $("flow-toggle").onclick = openFlow;
+    $("flow-close").onclick = closeFlow;
+    $("flow-backdrop").onclick = closeFlow;
+    $("flow-replay").onclick = () => {
+      flowIndex = 0;
+      if (flowReduceMotion()) { flowPlaying = false; flowStopTimer(); flowRender(); }
+      else flowStartTimer();
+    };
+    $("flow-pause").onclick = () => {
+      if (flowPlaying) { flowStopTimer(); flowPlaying = false; flowRender(); }
+      else if (!flowReduceMotion()) flowStartTimer();
+      else { flowPlaying = false; flowRender(); }
+    };
+    document.querySelectorAll(".flow-chip").forEach(chip => {
+      chip.onclick = () => {
+        flowIndex = Number(chip.dataset.step);
+        if (flowPlaying) flowStartTimer();
+        else flowRender();
+      };
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && flowModal.classList.contains("open")) closeFlow();
+    });
 
     $("download").onclick = () => {
       downloadBlob(($("name").value.trim().replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "policy") + ".json", JSON.stringify(policyFromForm(), null, 2), "application/json");
@@ -423,56 +777,180 @@
       $("receipts").innerHTML = receipts.length ? receipts.map(receiptCard).join("") : '<p class="empty">No receipts yet.</p>';
     }
     const requireIds = () => { if (!state.engagementId || !state.documentId) throw new Error("Set up an engagement and add a document first."); };
+    async function copySafeText() {
+      if (!state.exportPackage?.exportable) return;
+      try {
+        await navigator.clipboard.writeText(state.exportPackage.safe_text);
+        notice("Policy-checked text copied. Undeclared names or facts may remain.");
+      } catch {
+        notice("Copy failed — use Download instead.", true);
+      }
+    }
+    function downloadSafeText() {
+      if (!state.exportPackage?.exportable) return;
+      downloadBlob("privilege-safe.txt", state.exportPackage.safe_text);
+      notice("Text downloaded with declared terms replaced by placeholders.");
+    }
+    function downloadMapping() {
+      if (!state.exportPackage?.exportable) return;
+      const mapping = state.exportPackage.mapping || {};
+      downloadBlob("privilege-mapping.json", JSON.stringify(mapping, null, 2), "application/json");
+      notice("Mapping downloaded. It contains real names — keep it local.");
+    }
+    function downloadSafePdf() {
+      if (!state.exportPackage?.exportable || !state.exportPackage.safe_pdf_base64) return;
+      const n = state.exportPass || 1;
+      downloadBase64(`privilege-anonymized-v${n}.pdf`, state.exportPackage.safe_pdf_base64, "application/pdf");
+      notice(`PDF v${n} downloaded — allowed only under the selected engagement policy.`);
+    }
+    function renderFindings(data) {
+      const claims = data.inferred_claims || [];
+      const box = $("findings");
+      const list = $("findings-list");
+      if (!claims.length) { box.style.display = "none"; list.innerHTML = ""; return; }
+      box.style.display = "block";
+      list.innerHTML = claims.map(c => `<li>${esc(c)}</li>`).join("");
+    }
+    async function runExport({ revise = false } = {}) {
+      requireIds();
+      if (!state.documentAttested) throw new Error("Confirm the document assignment before anonymizing.");
+      notice(revise
+        ? "Running another attack pass on the mosaic so far…"
+        : "Reading locally, masking, then attacking with GPT-5.6…");
+      const data = await request("/api/export-safe", "POST", {
+        engagement_id: state.engagementId,
+        document_id: state.documentId,
+      });
+      state.exportPass += 1;
+      state.exportPackage = data;
+      $("export-result").style.display = "block";
+      $("pass-label").textContent = `· pass ${state.exportPass}` +
+        (data.repair_rounds ? ` · ${data.repair_rounds} repair round${data.repair_rounds === 1 ? "" : "s"}` : "");
+      showDecision(data.decision);
+      renderFindings(data);
+      if (data.exportable) {
+        $("safebox").style.display = "block";
+        $("sanitized").textContent = data.safe_text;
+        $("export-actions").style.display = "flex";
+        const tightened = data.decision === "Transform" || (data.repair_rounds || 0) > 0;
+        $("trust").innerHTML = tightened
+          ? `<strong>Transform under the selected engagement policy.</strong> The attacker found a protected inference and Privilege tightened the text. Download the revised PDF — or run another attack pass.`
+          : `<strong>Allow under the selected engagement policy.</strong> The attacker found no material match to the rules you supplied. Undeclared names or facts may remain.`;
+        $("s3-sub").textContent = `✓ ${data.decision} — anonymized PDF v${state.exportPass}`;
+        complete(3);
+        unlock(4);
+        showSafeStrip();
+        activate(3);
+      } else {
+        $("safebox").style.display = "none";
+        $("trust").innerHTML = `<strong>Not exported.</strong> ${esc(data.error || "The client stayed identifiable after masking.")} Tighten the policy or document, then try again.`;
+        $("s3-sub").textContent = "Not exported — tighten policy or document and try again.";
+        hideSafeStrip();
+        activate(3);
+      }
+      await refresh();
+      notice(
+        data.exportable
+          ? `${data.decision} under ${state.engagementName}. Anonymized PDF v${state.exportPass} ready.`
+          : `${data.decision}: export refused.`,
+        !data.exportable,
+      );
+    }
 
     // ---- step 1: engagement ----
     $("create").onclick = async () => {
       try {
-        const policy = JSON.parse($("policy").value);
+        const policy = policyFromForm();
         const data = await request("/api/engagements", "POST", { name: $("name").value, policy });
         state.engagementId = data.engagement_id;
-        $("s1-sub").textContent = `✓ ${$("name").value || "Engagement"} — ${policy.protected_values.length} protected term${policy.protected_values.length === 1 ? "" : "s"}`;
-        complete(1); activate(2);
-        notice("Engagement created locally. Now add a document.");
+        state.engagementName = $("name").value.trim();
+        localStorage.setItem("privilege.lastEngagementId", state.engagementId);
+        $("s1-sub").textContent = `✓ ${state.engagementName} — ${policy.protected_values.length} protected term${policy.protected_values.length === 1 ? "" : "s"}`;
+        complete(1);
+        $("s3-sub").textContent = "Mask locally, attack with GPT-5.6, download a safer PDF.";
+        resetDocumentFlow();
+        notice("Engagement created locally. Upload the client PDF.");
         await refresh();
+        await refreshSavedEngagements();
       } catch (e) { notice(e.message, true); }
     };
     $("load").onclick = async () => {
       try {
         const id = $("load-id").value.trim(); if (!id) throw new Error("Paste an engagement id first.");
-        state.engagementId = id;
-        const docs = await request(`/api/documents?engagement=${encodeURIComponent(id)}`);
-        $("s1-sub").textContent = `✓ Loaded ${id}`; complete(1);
-        if (docs.length) { state.documentId = docs[0].id; $("s2-sub").textContent = `✓ ${docs[0].title}`; complete(2); unlock(3); activate(3); }
-        else activate(2);
-        await refresh();
-        notice(`Loaded ${id}. Open Receipts to see earlier runs.`);
+        await resumeEngagement(id);
       } catch (e) { state.engagementId = null; notice(e.message, true); }
     };
 
     // ---- step 2: document ----
+    function prepareAttestation(title, meta) {
+      state.documentTitle = title;
+      state.documentAttested = false;
+      state.exportPackage = null;
+      state.exportPass = 0;
+      for (let i = 3; i <= 4; i++) {
+        $("step-" + i).classList.remove("active", "complete");
+        $("step-" + i).classList.add("locked");
+      }
+      $("step-2").classList.remove("complete", "locked");
+      $("step-2").classList.add("active");
+      $("s2-sub").textContent = `Confirmation required · ${title}`;
+      $("attest-context").textContent =
+        `${title} will be evaluated only under the “${state.engagementName}” engagement policy.`;
+      $("attest-check").checked = false;
+      $("attest-document").disabled = true;
+      $("attest-box").hidden = false;
+      showSelectedFile(title, meta || "Extracted locally on this machine. Confirm assignment before anonymizing.");
+      $("file-selected").scrollIntoView({ behavior: "smooth", block: "center" });
+      hideSafeStrip();
+      notice("PDF extracted locally. Confirm the document assignment before continuing.");
+    }
     async function importText() {
+      if (!state.engagementId) throw new Error("Create or resume an engagement first.");
       state.raw = $("raw").value;
+      if (!state.raw.trim()) throw new Error("Upload a PDF, or paste text first.");
       const data = await request("/api/documents", "POST", { engagement_id: state.engagementId, title: $("title").value, raw_text: state.raw });
       state.documentId = data.document_id; $("raw-view").textContent = state.raw;
-      $("s2-sub").textContent = `✓ ${$("title").value}`;
-      complete(2); activate(3);
-      notice("Document added. Now make it safe for AI.");
+      prepareAttestation($("title").value);
     }
     $("import").onclick = () => importText().catch(e => notice(e.message, true));
     $("file").onchange = async e => {
       const f = e.target.files[0]; if (!f) return;
       try {
         if (!state.engagementId) throw new Error("Create an engagement first.");
+        const kb = Math.max(1, Math.round(f.size / 1024));
+        showSelectedFile(f.name, `Selected · ${kb} KB · reading locally…`);
         notice(`Reading ${f.name} locally…`);
         const buf = await f.arrayBuffer(); let bin = ""; const b = new Uint8Array(buf);
         for (let i = 0; i < b.length; i++) bin += String.fromCharCode(b[i]);
         const data = await request("/api/upload", "POST", { engagement_id: state.engagementId, filename: f.name, content_base64: btoa(bin) });
         state.documentId = data.document_id; state.raw = data.raw_text;
         $("title").value = f.name; $("raw").value = data.raw_text; $("raw-view").textContent = data.raw_text;
-        $("s2-sub").textContent = `✓ ${f.name}`;
-        complete(2); activate(3);
-        notice(`Extracted ${data.raw_text.length} characters from ${f.name}. Nothing has been sent.`);
-      } catch (err) { notice(err.message, true); e.target.value = ""; }
+        const chars = (data.raw_text || "").length;
+        prepareAttestation(f.name, `Extracted locally · ${kb} KB · ${chars.toLocaleString()} characters`);
+      } catch (err) {
+        notice(err.message, true);
+        e.target.value = "";
+        clearSelectedFile();
+      }
+    };
+    $("attest-check").onchange = () => {
+      $("attest-document").disabled = !$("attest-check").checked;
+    };
+    $("attest-document").onclick = async () => {
+      try {
+        if (!$("attest-check").checked) throw new Error("Confirm the document assignment first.");
+        await request("/api/attest-document", "POST", {
+          engagement_id: state.engagementId,
+          document_id: state.documentId,
+        });
+        state.documentAttested = true;
+        $("attest-box").hidden = true;
+        $("s2-sub").textContent = `✓ ${state.documentTitle} · operator confirmed`;
+        complete(2);
+        unlock(3);
+        activate(3);
+        notice(`Confirmed under ${state.engagementName}. Privilege will now apply only that engagement policy.`);
+      } catch (e) { notice(e.message, true); }
     };
 
     // ---- step 3: export ----
@@ -481,36 +959,16 @@
       const icon = d === "Block" ? "⛔" : d === "Transform" ? "✎" : "✓";
       b.textContent = `${icon} ${d}`;
     }
-    $("export-safe").onclick = async () => {
-      try {
-        requireIds();
-        notice("Masking locally, then attacking with GPT-5.6…");
-        const data = await request("/api/export-safe", "POST", { engagement_id: state.engagementId, document_id: state.documentId });
-        state.exportPackage = data;
-        $("export-result").style.display = "block";
-        showDecision(data.decision);
-        if (data.exportable) {
-          $("safebox").style.display = "block";
-          $("sanitized").textContent = data.safe_text;
-          $("export-actions").style.display = "flex";
-          $("trust").innerHTML = `<strong>Safe to send.</strong> GPT-5.6 could not re-identify the client from this text. Copy it into ChatGPT or Claude; the mapping to real names stays on this machine for step 4.`;
-          // Keep step 3 open so the safe document stays visible to copy; just
-          // unlock step 4 for when the reply comes back.
-          complete(3); unlock(4);
-        } else {
-          $("safebox").style.display = "none";
-          $("trust").innerHTML = `<strong>Not exported.</strong> ${esc(data.error || "The client stayed identifiable after masking.")} Tighten the policy or the document and try again.`;
-        }
-        await refresh();
-        notice(data.exportable ? `${data.decision}. Safe document ready — paste it into your AI, then restore names in step 4.` : `${data.decision}: export refused.`, !data.exportable);
-      } catch (e) { notice(e.message, true); }
-    };
-    $("copy-safe").onclick = async () => {
-      if (!state.exportPackage?.exportable) return;
-      try { await navigator.clipboard.writeText(state.exportPackage.safe_text); notice("Safe text copied. Paste it into ChatGPT, Claude, or another tool."); }
-      catch { notice("Copy failed — use Download instead.", true); }
-    };
-    $("download-safe").onclick = () => { if (state.exportPackage?.exportable) { downloadBlob("privilege-safe.txt", state.exportPackage.safe_text); notice("Safe text downloaded (placeholders, not real names)."); } };
+    $("export-safe").onclick = () => runExport({ revise: false }).catch(e => notice(e.message, true));
+    $("revise-pdf").onclick = () => runExport({ revise: true }).catch(e => notice(e.message, true));
+    $("download-pdf").onclick = downloadSafePdf;
+    $("download-pdf-strip").onclick = downloadSafePdf;
+    $("copy-safe").onclick = copySafeText;
+    $("download-safe").onclick = downloadSafeText;
+    $("download-map").onclick = downloadMapping;
+    $("copy-safe-strip").onclick = copySafeText;
+    $("download-safe-strip").onclick = downloadSafeText;
+    $("download-map-strip").onclick = downloadMapping;
 
     // ---- step 4: rehydrate ----
     $("rehydrate").onclick = async () => {

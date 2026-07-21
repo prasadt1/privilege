@@ -36,14 +36,34 @@ def test_init_engagement_and_import_round_trip(tmp_path, capsys) -> None:
     document = tmp_path / "notes.txt"
     document.write_text("Northwind Freight is reviewing depot leases.")
 
-    assert cli.main(["--mock", "--db", str(db), "import", "--engagement", engagement_id, "--file", str(document)]) == 0
+    assert cli.main(
+        [
+            "--mock",
+            "--db",
+            str(db),
+            "import",
+            "--engagement",
+            engagement_id,
+            "--file",
+            str(document),
+            "--attest",
+        ]
+    ) == 0
     assert json.loads(capsys.readouterr().out)["document_id"]
 
 
-def test_status_reports_an_empty_engagement(tmp_path, capsys) -> None:
+def test_status_reports_an_engagement_without_documents(tmp_path, capsys) -> None:
     db = tmp_path / "vault.sqlite3"
     policy_file = tmp_path / "policy.json"
-    policy_file.write_text(json.dumps({"protected_values": [], "abstract_rules": [], "allowed_purpose": "review"}))
+    policy_file.write_text(
+        json.dumps(
+            {
+                "protected_values": ["Empty Client"],
+                "abstract_rules": ["Empty Client plans are protected"],
+                "allowed_purpose": "review",
+            }
+        )
+    )
 
     cli.main(["--mock", "--db", str(db), "init-engagement", "--name", "empty", "--policy-file", str(policy_file)])
     engagement_id = json.loads(capsys.readouterr().out)["engagement_id"]

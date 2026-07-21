@@ -19,6 +19,10 @@ from .policy import EngagementPolicy
 
 
 DEFAULT_DB_PATH = Path.home() / ".privilege" / "vault.sqlite3"
+DEFAULT_ATTESTATION = (
+    "I confirm this document belongs to the selected engagement and that its "
+    "policy contains the names, aliases, and facts I expect Privilege to protect."
+)
 
 
 class UnknownEngagementError(ValueError):
@@ -92,6 +96,12 @@ class VaultStore:
                 raw_text TEXT NOT NULL, created_at TEXT NOT NULL,
                 FOREIGN KEY (engagement_id) REFERENCES engagements(id)
             );
+            CREATE TABLE IF NOT EXISTS document_attestations (
+                document_id TEXT PRIMARY KEY, engagement_id TEXT NOT NULL,
+                statement TEXT NOT NULL, attested_at TEXT NOT NULL,
+                FOREIGN KEY (document_id) REFERENCES documents(id),
+                FOREIGN KEY (engagement_id) REFERENCES engagements(id)
+            );
             CREATE TABLE IF NOT EXISTS mappings (
                 engagement_id TEXT NOT NULL, real_value TEXT NOT NULL, placeholder TEXT NOT NULL,
                 PRIMARY KEY (engagement_id, real_value),
@@ -127,6 +137,19 @@ class VaultStore:
             raise UnknownEngagementError(f"unknown engagement id: {engagement_id}")
         return Engagement(row["id"], row["name"], EngagementPolicy.from_dict(json.loads(row["policy_json"])), row["created_at"])
 
+    def list_engagements(self) -> list[dict[str, object]]:
+        """List resumable local engagements without exposing policy values."""
+        rows = self._read(
+            """
+            SELECT e.id, e.name, e.created_at, COUNT(d.id) AS document_count
+            FROM engagements AS e
+            LEFT JOIN documents AS d ON d.engagement_id = e.id
+            GROUP BY e.id, e.name, e.created_at
+            ORDER BY e.created_at DESC, e.id DESC
+            """
+        )
+        return [dict(row) for row in rows]
+
     def import_document(self, engagement_id: str, title: str, raw_text: str) -> str:
         self.get_engagement(engagement_id)
         document_id = self._new_id("doc")
@@ -143,14 +166,58 @@ class VaultStore:
             raise UnknownDocumentError(f"unknown document id: {document_id}")
         return Document(row["id"], row["engagement_id"], row["title"], row["raw_text"], row["created_at"])
 
-    def list_documents(self, engagement_id: str) -> list[dict[str, str]]:
+    def list_documents(self, engagement_id: str) -> list[dict[str, object]]:
         """List local document metadata without returning raw document text."""
         self.get_engagement(engagement_id)
         rows = self._read(
-            "SELECT id, engagement_id, title, created_at FROM documents WHERE engagement_id = ? ORDER BY created_at, id",
+            """
+            SELECT d.id, d.engagement_id, d.title, d.created_at,
+                   CASE WHEN a.document_id IS NULL THEN 0 ELSE 1 END AS operator_attested
+            FROM documents AS d
+            LEFT JOIN document_attestations AS a ON a.document_id = d.id
+            WHERE d.engagement_id = ?
+            ORDER BY d.created_at, d.id
+            """,
             (engagement_id,),
         )
-        return [dict(row) for row in rows]
+        return [
+            {**dict(row), "operator_attested": bool(row["operator_attested"])}
+            for row in rows
+        ]
+
+    def attest_document(
+        self,
+        engagement_id: str,
+        document_id: str,
+        statement: str = DEFAULT_ATTESTATION,
+    ) -> str:
+        """Record the operator's explicit document-to-engagement attestation."""
+        document = self.get_document(document_id)
+        if document.engagement_id != engagement_id:
+            raise ValueError("document does not belong to engagement")
+        attested_at = self._now()
+        self._write(
+            """
+            INSERT INTO document_attestations VALUES (?, ?, ?, ?)
+            ON CONFLICT(document_id) DO UPDATE SET
+                engagement_id = excluded.engagement_id,
+                statement = excluded.statement,
+                attested_at = excluded.attested_at
+            """,
+            (document_id, engagement_id, statement, attested_at),
+        )
+        return attested_at
+
+    def is_document_attested(self, engagement_id: str, document_id: str) -> bool:
+        """Return whether this exact document/engagement association was attested."""
+        document = self.get_document(document_id)
+        if document.engagement_id != engagement_id:
+            raise ValueError("document does not belong to engagement")
+        rows = self._read(
+            "SELECT 1 FROM document_attestations WHERE document_id = ? AND engagement_id = ?",
+            (document_id, engagement_id),
+        )
+        return bool(rows)
 
     def upsert_mapping(self, engagement_id: str, real_value: str, placeholder: str) -> None:
         self.get_engagement(engagement_id)

@@ -45,6 +45,14 @@ class PrivilegeHandler(BaseHTTPRequestHandler):
                 self._send_json(self.service.status(engagement_id))
             elif parsed.path == "/api/documents":
                 self._send_json(self.service.list_documents(_query_value(parsed.query, "engagement")))
+            elif parsed.path == "/api/engagements":
+                self._send_json(self.service.list_engagements())
+            elif parsed.path == "/api/engagement":
+                self._send_json(
+                    self.service.engagement_detail(
+                        _query_value(parsed.query, "engagement")
+                    )
+                )
             elif parsed.path == "/api/receipts":
                 self._send_json(self.service.list_receipts(_query_value(parsed.query, "engagement")))
             elif parsed.path == "/api/mode":
@@ -72,6 +80,13 @@ class PrivilegeHandler(BaseHTTPRequestHandler):
                 text = self._extract_upload(body["filename"], body["content_base64"])
                 document_id = self.service.import_document(body["engagement_id"], body["filename"], text)
                 self._send_json({"document_id": document_id, "raw_text": text}, HTTPStatus.CREATED)
+            elif self.path == "/api/attest-document":
+                self._send_json(
+                    self.service.attest_document(
+                        body["engagement_id"],
+                        body["document_id"],
+                    )
+                )
             elif self.path == "/api/preflight":
                 result = self.service.preflight(body["engagement_id"], body["document_id"], body["task"])
                 self._send_json(asdict(result))
@@ -166,6 +181,12 @@ def _runtime_mode() -> dict[str, str]:
     everything because a failed check must fail closed.
     """
     if os.environ.get("PRIVILEGE_MOCK") == "1":
+        if os.environ.get("PRIVILEGE_DEMO_ATTACK") == "1":
+            return {
+                "mode": "mock",
+                "label": "Mock · demo attack",
+                "detail": "Offline demo attacker: finds a mosaic once, rewrites, then Allows. No API key is used.",
+            }
         return {
             "mode": "mock",
             "label": "Mock, offline",

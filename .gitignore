@@ -15,7 +15,26 @@ build/
 demo/last_seed.json
 .env
 .openai_session_id
+
+# Author-only / submission drafts — not for the public judge-facing tree
 HANDOFF.md
 SUBMISSION.md
 SECURITY-REVIEW.md
+VIDEO-SCRIPT.md
+screenshots/
+docs/superpowers/prompts/
+docs/superpowers/plans/
+tools/devpost-gallery/LEAVE-AND-RUN.md
+tools/devpost-gallery/fixtures/engagement_notes.txt
+
+# Demo / recording outputs — YouTube carries the video; keep PNGs in docs/media/
+docs/media/**/*.mp4
+docs/media/**/*.webm
+docs/media/.chatgpt-*.png
+docs/media/.pdf-lifecycle-tmp/
+*.mp4
+*.webm
+
+# Local ChatGPT login profile for the recorder (cookies) — never commit
 tools/devpost-gallery/node_modules/
+tools/devpost-gallery/.chrome-profile/

@@ -37,3 +37,34 @@ def test_unknown_engagement_raises_cleanly(tmp_path) -> None:
 
     with pytest.raises(UnknownEngagementError, match="unknown engagement id"):
         store.import_document("eng_missing", "notes", "raw")
+
+
+def test_engagement_listing_and_document_attestation_persist(tmp_path) -> None:
+    path = tmp_path / "vault.sqlite3"
+    store = VaultStore(path)
+    engagement_id = store.create_engagement(
+        "Northstar",
+        EngagementPolicy(
+            protected_values=["Northstar"],
+            abstract_rules=["Northstar plans are protected"],
+        ),
+    )
+    document_id = store.import_document(engagement_id, "brief.pdf", "Northstar plans")
+
+    saved = store.list_engagements()
+    assert saved == [
+        {
+            "id": engagement_id,
+            "name": "Northstar",
+            "created_at": saved[0]["created_at"],
+            "document_count": 1,
+        }
+    ]
+    assert store.is_document_attested(engagement_id, document_id) is False
+
+    store.attest_document(engagement_id, document_id)
+    store.close()
+
+    reopened = VaultStore(path)
+    assert reopened.is_document_attested(engagement_id, document_id) is True
+    assert reopened.list_documents(engagement_id)[0]["operator_attested"] is True

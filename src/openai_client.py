@@ -176,7 +176,46 @@ class MockOpenAIClient:
         return sanitized_doc
 
 
+class DemoAttackClient(MockOpenAIClient):
+    """Mock attacker that finds a mosaic once, then clears after rewrite.
+
+    Enabled with PRIVILEGE_MOCK=1 and PRIVILEGE_DEMO_ATTACK=1 so the PDF
+    lifecycle demo can show findings → revise → Allow without a live key.
+    """
+
+    model = "mock-demo-attack"
+
+    def __init__(self) -> None:
+        self._infer_calls = 0
+
+    def infer_claims(self, prior_payloads: list[str], candidate: str) -> list[str]:
+        self._infer_calls += 1
+        # First attack pass on a fresh export: claim the corridor story is identifiable.
+        if self._infer_calls == 1 and "volumes fell" in candidate.lower():
+            return [
+                "A freight operator is withdrawing pressure from a named corridor "
+                "before depot lease renewals — client still identifiable from context."
+            ]
+        return []
+
+    def match_rules(self, inferred_claims: list[str], abstract_rules: list[str]) -> list[dict[str, object]]:
+        if not inferred_claims:
+            return []
+        rule = abstract_rules[0] if abstract_rules else "protected engagement fact"
+        return [{"rule": rule, "material": True, "reason": "mosaic re-identification"}]
+
+    def propose_rewrite(self, candidate: str, matched: list[dict[str, object]], preserve_facts: list[str]) -> str:
+        # Generalize the mosaic clues so a second attack pass can Allow.
+        rewritten = candidate
+        rewritten = rewritten.replace("volumes fell 22% year on year", "volumes changed versus the prior year")
+        rewritten = rewritten.replace("expire in Q3", "come up for renewal later this year")
+        rewritten = rewritten.replace("has not yet announced any change to the corridor", "has not announced network changes")
+        return rewritten
+
+
 def client_from_environment() -> OpenAIClient | MockOpenAIClient:
     if os.environ.get("PRIVILEGE_MOCK") == "1":
+        if os.environ.get("PRIVILEGE_DEMO_ATTACK") == "1":
+            return DemoAttackClient()
         return MockOpenAIClient()
     return OpenAIClient()

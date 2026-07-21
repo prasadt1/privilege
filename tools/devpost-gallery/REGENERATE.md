@@ -1,6 +1,7 @@
 # Regenerating Privilege Devpost gallery images
 
-Outputs land in `docs/media/` with the filenames embedded in `SUBMISSION.md`.
+Outputs land in `docs/media/` (PNG filenames embedded in the Devpost story).
+Demo **videos** are gitignored — upload to YouTube; do not commit `.mp4`/`.webm`.
 
 ## Prerequisites
 
@@ -22,34 +23,43 @@ node capture-architecture.mjs
 # → docs/media/consultant-workflow.png
 ```
 
-No separate data-flow diagram: the trust-boundary architecture already shows
-what crosses to OpenAI. The workflow diagram is the Work & Productivity story
-(how a consultant uses Privilege day-to-day).
-
 ## UI captures
-
-Start the local viewer against the committed live-run vault (separate terminal):
 
 ```bash
 # from repo root
 .venv/bin/python -m src.server_http --db demo/demo-vault.sqlite3 --port 7077
 ```
 
-Then:
-
 ```bash
 cd tools/devpost-gallery
 node capture-ui.mjs
-# → docs/media/viewer-three-column.png   (export-first step flow; filename historical)
-# → docs/media/receipt-expanded.png
-
-# architecture + export-first workflow + policy card:
 node capture-architecture.mjs
 ```
 
-The viewer is a **step flow** (policy → document → export → restore), not the
-old three-column dashboard. Update story captions if you re-screenshot.
+## PDF lifecycle demo recording (local only)
+
+Videos are not committed. Fixture PDF is:
+
+`tools/devpost-gallery/fixtures/client-brief.pdf`
+
+```bash
+# from repo root
+rm -f /tmp/privilege-pdf-demo.sqlite3
+PRIVILEGE_MOCK=1 PRIVILEGE_DEMO_ATTACK=1 \
+  .venv/bin/python -m src.server_http --db /tmp/privilege-pdf-demo.sqlite3 --mock --port 7077
+
+cd tools/devpost-gallery
+# optional live ChatGPT: node setup-chatgpt-profile.mjs  (profile is gitignored)
+./run-full-demo.sh
+# → docs/media/privilege-pdf-lifecycle.mp4 (gitignored)
+```
+
+Rebuild fixture:
+
+```bash
+.venv/bin/python tools/devpost-gallery/fixtures/build-client-brief.py
+```
 
 ## Gallery index
 
-Titles and captions for the Devpost image gallery: `docs/media/DEVPOST-GALLERY.md`.
+Titles and captions: `docs/media/DEVPOST-GALLERY.md`.

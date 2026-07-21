@@ -8,9 +8,10 @@ from typing import Any
 
 from .analyze import AnalysisResult, analyze_after_preflight
 from .openai_client import PreflightError, client_from_environment
+from .pdf_out import text_to_pdf_base64
 from .policy import EngagementPolicy
 from .preflight import PreflightResult, run_preflight
-from .sanitize import restore
+from .sanitize import restore, sanitize
 from .store import DEFAULT_DB_PATH, VaultStore
 
 # Mode 2: attack-verify a sanitized document, then let the consultant paste it
@@ -47,12 +48,64 @@ class PrivilegeService:
         return self._client
 
     def create_engagement(self, name: str, policy: EngagementPolicy | dict[str, Any]) -> str:
-        return self.store.create_engagement(name, policy)
+        cleaned_name = name.strip()
+        if not cleaned_name:
+            raise ValueError("Client or project is required")
+        policy_object = (
+            policy if isinstance(policy, EngagementPolicy) else EngagementPolicy.from_dict(policy)
+        )
+        protected = [value.strip() for value in policy_object.protected_values if value.strip()]
+        if not protected:
+            raise ValueError("At least one protected name or term is required")
+        rules = [rule.strip() for rule in policy_object.abstract_rules if rule.strip()]
+        if not rules:
+            raise ValueError("Describe at least one fact that must not become inferable")
+        if cleaned_name not in protected:
+            # Preserve the operator's explicit placeholder ordering. The local
+            # display name is protected too, but appending it must not renumber
+            # existing values and invalidate mappings in an imported policy.
+            protected.append(cleaned_name)
+        validated_policy = replace(
+            policy_object,
+            protected_values=protected,
+            abstract_rules=rules,
+        )
+        return self.store.create_engagement(cleaned_name, validated_policy)
 
     def import_document(self, engagement_id: str, title: str, raw_text: str) -> str:
         return self.store.import_document(engagement_id, title, raw_text)
 
+    def list_engagements(self) -> list[dict[str, object]]:
+        """List local engagement metadata for the operator's resume picker."""
+        return self.store.list_engagements()
+
+    def engagement_detail(self, engagement_id: str) -> dict[str, object]:
+        """Return full local policy details; never expose this through MCP."""
+        engagement = self.store.get_engagement(engagement_id)
+        return {
+            "id": engagement.id,
+            "name": engagement.name,
+            "policy": engagement.policy.to_dict(),
+            "created_at": engagement.created_at,
+            "documents": self.store.list_documents(engagement_id),
+        }
+
+    def attest_document(self, engagement_id: str, document_id: str) -> dict[str, object]:
+        """Record the consultant's responsibility for document assignment."""
+        attested_at = self.store.attest_document(engagement_id, document_id)
+        return {
+            "engagement_id": engagement_id,
+            "document_id": document_id,
+            "operator_attested": True,
+            "attested_at": attested_at,
+        }
+
     def preflight(self, engagement_id: str, document_id: str, task: str) -> PreflightResult:
+        if not self.store.is_document_attested(engagement_id, document_id):
+            raise ValueError(
+                "attest that this document belongs to the selected engagement "
+                "before running a check"
+            )
         try:
             client = self.client
         except PreflightError as error:
@@ -82,10 +135,14 @@ class PrivilegeService:
     def status(self, engagement_id: str) -> dict[str, object]:
         """An MCP-safe view without raw document text or mappings."""
         engagement = self.store.get_engagement(engagement_id)
+        safe_purpose = sanitize(
+            engagement.policy.allowed_purpose,
+            engagement.policy.assign_placeholders(),
+        ).text
         return {
             "engagement_id": engagement.id,
             "abstract_rules": engagement.policy.to_abstract_for_judge(),
-            "allowed_purpose": engagement.policy.allowed_purpose,
+            "allowed_purpose": safe_purpose,
             "strictness": engagement.policy.strictness,
             "sanitized_disclosure_count": len(self.store.list_ledger(engagement_id, "openai")),
         }
@@ -125,20 +182,32 @@ class PrivilegeService:
             "decision": preflight.decision,
             "exportable": exportable,
             "safe_text": safe_text,
+            "safe_pdf_base64": "",
             "mapping": export_map if exportable else {},
+            "inferred_claims": list(preflight.inferred_claims),
+            "matched_rules": list(preflight.matched_rules),
+            "repair_rounds": preflight.rounds,
             "receipt_id": preflight.receipt_id,
             "error": preflight.error,
         }
         if exportable:
-            self.store.append_ledger(engagement_id, "openai", preflight.final_payload)
-            package["receipt_id"] = self.store.save_receipt(
-                engagement_id,
-                preflight.decision,
-                {
-                    **preflight.receipt_payload(outbound_sent=True, analysis_sent=False),
-                    "mode": "export_safe",
-                },
+            package["safe_pdf_base64"] = text_to_pdf_base64(
+                safe_text,
+                title="Privilege anonymized document",
             )
+            self.store.append_ledger(engagement_id, "openai", preflight.final_payload)
+        package["receipt_id"] = self.store.save_receipt(
+            engagement_id,
+            preflight.decision,
+            {
+                **preflight.receipt_payload(
+                    outbound_sent=exportable,
+                    analysis_sent=False,
+                ),
+                "mode": "export_safe",
+                "operator_attested": True,
+            },
+        )
         return package
 
     def rehydrate(self, engagement_id: str, text: str) -> dict[str, object]:

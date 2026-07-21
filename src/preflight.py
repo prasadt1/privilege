@@ -64,14 +64,24 @@ def run_preflight(engagement_id: str, document_id: str, task: str, store: VaultS
         rounds = 0
         claims: list[str] = []
         matches: list[dict[str, object]] = []
+        # Keep the last material attack so Transform receipts still show what
+        # the model found before the rewrite cleared it.
+        attack_claims: list[str] = []
+        attack_matches: list[dict[str, object]] = []
         while True:
             claims = client.infer_claims(prior_payloads, candidate)
             matches = client.match_rules(claims, abstract_rules)
             material = [match for match in matches if match["material"]]
+            if material:
+                attack_claims = list(claims)
+                attack_matches = list(matches)
             if not material:
                 result = PreflightResult(
                     engagement_id, document_id, "Transform" if rounds else "Allow", candidate,
-                    sanitized_task, rounds, claims, matches, len(prior_payloads)
+                    sanitized_task, rounds,
+                    attack_claims if rounds else claims,
+                    attack_matches if rounds else matches,
+                    len(prior_payloads),
                 )
                 return _save_preflight_receipt(store, result)
             if rounds >= MAX_REPAIR_ROUNDS:

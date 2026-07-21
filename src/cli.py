@@ -42,7 +42,11 @@ def main(argv: list[str] | None = None) -> int:
             _print({"engagement_id": service.create_engagement(args.name, policy)})
         elif args.command == "import":
             document_id = service.import_document(args.engagement, args.file.name, extract_text(args.file))
-            _print({"document_id": document_id})
+            if args.attest:
+                service.attest_document(args.engagement, document_id)
+            _print({"document_id": document_id, "operator_attested": args.attest})
+        elif args.command == "attest-document":
+            _print(service.attest_document(args.engagement, args.document))
         elif args.command == "preflight":
             result = service.preflight(args.engagement, args.document, args.task)
             _print(_preflight_json(result))
@@ -64,6 +68,9 @@ def main(argv: list[str] | None = None) -> int:
                     args.output.write_text(str(package["safe_text"]))
                 if args.mapping is not None:
                     args.mapping.write_text(json.dumps(package["mapping"], indent=2, sort_keys=True) + "\n")
+                if args.pdf is not None:
+                    from .pdf_out import text_to_pdf_bytes
+                    args.pdf.write_bytes(text_to_pdf_bytes(str(package["safe_text"])))
             summary = {
                 "decision": package["decision"],
                 "exportable": package["exportable"],
@@ -71,11 +78,15 @@ def main(argv: list[str] | None = None) -> int:
                 "error": package["error"],
                 "safe_chars": len(str(package["safe_text"])),
                 "mapping_entries": len(package["mapping"]),
+                "repair_rounds": package.get("repair_rounds"),
+                "inferred_claims": len(package.get("inferred_claims") or []),
             }
             if args.output is not None:
                 summary["output"] = str(args.output)
             if args.mapping is not None:
                 summary["mapping"] = str(args.mapping)
+            if args.pdf is not None:
+                summary["pdf"] = str(args.pdf)
             if args.bundle is not None:
                 summary["bundle"] = str(args.bundle)
             _print(summary)
@@ -96,7 +107,7 @@ def main(argv: list[str] | None = None) -> int:
         # format, or a missing credential. A stack trace would only obscure them.
         print(f"error: {error}", file=sys.stderr)
         return 2
-    except (UnknownEngagementError, UnknownDocumentError) as error:
+    except (UnknownEngagementError, UnknownDocumentError, ValueError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
     except json.JSONDecodeError as error:
@@ -124,6 +135,18 @@ def _parser() -> argparse.ArgumentParser:
     import_document.add_argument(
         "--file", type=Path, required=True, help=f"local file ({', '.join(SUPPORTED_SUFFIXES)}), extracted on this machine"
     )
+    import_document.add_argument(
+        "--attest",
+        action="store_true",
+        help="confirm the document belongs to this engagement and its policy is complete",
+    )
+
+    attest = commands.add_parser(
+        "attest-document",
+        help="record operator confirmation before checking or exporting a document",
+    )
+    attest.add_argument("--engagement", required=True)
+    attest.add_argument("--document", required=True)
 
     for name in ("preflight", "analyze"):
         command = commands.add_parser(name, help=f"{name} a local document")
@@ -151,6 +174,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     export_safe.add_argument("--output", type=Path, help="write the redacted document text")
     export_safe.add_argument("--mapping", type=Path, help="write placeholder→real mapping JSON")
+    export_safe.add_argument("--pdf", type=Path, help="write an anonymized PDF of the redacted text")
     export_safe.add_argument("--bundle", type=Path, help="write the full export package JSON")
 
     rehydrate = commands.add_parser(

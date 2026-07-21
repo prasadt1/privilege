@@ -12,7 +12,7 @@ dependencies = ["openai"]
 [project.optional-dependencies]
 dev = ["pytest", "pypdf", "python-docx"]
 mcp = ["mcp"]
-files = ["pypdf", "python-docx"]
+files = ["pypdf", "python-docx", "fpdf2"]
 
 [project.scripts]
 privilege = "src.cli:main"
