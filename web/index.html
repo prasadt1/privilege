@@ -145,7 +145,16 @@
     .attest-box { border-color: color-mix(in oklch, var(--amber) 35%, var(--line)); }
     .attest-check { display: flex; grid-template-columns: none; align-items: flex-start; gap: 10px; color: var(--ink); margin: 14px 0; }
     .attest-check input { width: auto; flex: none; margin-top: 4px; }
-    .section-or { color: var(--faint); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; text-align: center; margin: 14px 0 8px; }
+    .section-or {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      margin: 18px 0 12px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+    .section-or span { display: block; color: var(--faint); font-size: 12px; font-weight: 500; margin-top: 2px; }
 
     .flow-modal { position: fixed; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center; padding: 20px; }
     .flow-modal.open { display: flex; }
@@ -238,7 +247,10 @@
               <button class="btn ghost small" id="resume" type="button">Resume</button>
             </div>
           </div>
-          <div class="section-or" id="new-engagement-label" hidden>or create a new engagement</div>
+          <div class="section-or" id="new-engagement-label" hidden>
+            New engagement
+            <span>Different client or project — fill the fields below, then Create.</span>
+          </div>
           <label>Start from a template<select id="template"></select></label>
           <label>Client or project<input id="name"></label>
           <label>Names and terms that must stay confidential (one per line)<textarea id="protected" rows="3"></textarea></label>

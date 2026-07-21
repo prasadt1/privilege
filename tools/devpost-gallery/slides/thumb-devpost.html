@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Devpost thumbnail 3:2</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #0f0d0b; }
+  body {
+    width: 1500px;
+    height: 1000px;
+    color: #f4efe6;
+    font-family: "Iowan Old Style", Palatino, Georgia, serif;
+    background:
+      radial-gradient(900px 600px at 12% 18%, rgba(245,166,35,.16), transparent 55%),
+      radial-gradient(700px 500px at 90% 85%, rgba(245,166,35,.08), transparent 50%),
+      linear-gradient(155deg, #1a1612 0%, #0e0c0a 55%, #15120f 100%);
+  }
+  #frame {
+    width: 1500px;
+    height: 1000px;
+    padding: 72px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .kicker {
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: #f5a623;
+  }
+  h1 {
+    margin-top: 28px;
+    font-size: 78px;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
+    max-width: 14ch;
+  }
+  h1 em { font-style: italic; color: #f7d59a; font-weight: 600; }
+  .lede {
+    margin-top: 28px;
+    max-width: 32ch;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 28px;
+    line-height: 1.4;
+    color: #b9b0a3;
+  }
+  .path {
+    margin-top: 36px;
+    display: inline-flex;
+    gap: 12px;
+    align-items: center;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 20px;
+    font-weight: 650;
+    color: #f5a623;
+    padding: 12px 18px;
+    border: 1px solid rgba(245,166,35,.3);
+    border-radius: 999px;
+    background: rgba(245,166,35,.07);
+  }
+  .path span { color: #8a8174; font-weight: 500; }
+  footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .brand { font-size: 36px; font-weight: 750; letter-spacing: -0.03em; }
+  .brand i { color: #f5a623; font-style: normal; }
+  .meta { font-size: 20px; color: #8a8174; }
+</style>
+</head>
+<body>
+  <div id="frame">
+    <div>
+      <div class="kicker">Engagement confidentiality</div>
+      <h1>The leak isn’t the name.<br /><em>It’s the mosaic.</em></h1>
+      <p class="lede">Local preflight: mask → GPT-5.6 attacks → anonymized PDF → restore.</p>
+      <div class="path">Privilege <span>·</span> OpenAI Build Week</div>
+    </div>
+    <footer>
+      <div class="brand">Privilege<i>.</i></div>
+      <div class="meta">github.com/prasadt1/privilege</div>
+    </footer>
+  </div>
+</body>
+</html>

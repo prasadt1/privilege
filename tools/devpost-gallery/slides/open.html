@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Privilege — open</title>
+<style>
+  :root {
+    --ink: #f4efe6;
+    --muted: #b9b0a3;
+    --faint: #8a8174;
+    --amber: #f5a623;
+    --canvas: #14110e;
+    --panel: #1c1814;
+    --line: rgba(245,166,35,.28);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--canvas); }
+  body {
+    width: 1920px;
+    height: 1248px;
+    color: var(--ink);
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    background:
+      radial-gradient(1200px 700px at 18% 12%, rgba(245,166,35,.12), transparent 55%),
+      radial-gradient(900px 600px at 88% 78%, rgba(245,166,35,.06), transparent 50%),
+      linear-gradient(160deg, #1a1612 0%, #0f0d0b 55%, #16120f 100%);
+  }
+  #frame {
+    width: 1920px;
+    height: 1248px;
+    padding: 96px 110px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .kicker {
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
+  h1 {
+    margin-top: 36px;
+    max-width: 16ch;
+    font-size: 92px;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
+  }
+  h1 em {
+    font-style: italic;
+    font-weight: 600;
+    color: #f7d59a;
+  }
+  .lede {
+    margin-top: 34px;
+    max-width: 34ch;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 30px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+  .path {
+    margin-top: 48px;
+    display: inline-flex;
+    gap: 14px;
+    align-items: center;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 22px;
+    font-weight: 650;
+    color: var(--amber);
+    letter-spacing: .01em;
+    padding: 14px 20px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(245,166,35,.06);
+  }
+  .path span { color: var(--faint); font-weight: 500; }
+  footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .brand {
+    font-size: 34px;
+    font-weight: 750;
+    letter-spacing: -0.03em;
+  }
+  .brand i {
+    color: var(--amber);
+    font-style: normal;
+  }
+  .meta {
+    font-size: 20px;
+    color: var(--faint);
+    letter-spacing: .04em;
+  }
+</style>
+</head>
+<body>
+  <div id="frame">
+    <div>
+      <div class="kicker">Engagement confidentiality</div>
+      <h1>The leak isn’t always the name.<br /><em>It’s the mosaic.</em></h1>
+      <p class="lede">
+        Three harmless facts can still re-identify a client.
+        Privilege attacks the draft locally — before anything leaves the laptop.
+      </p>
+      <div class="path">Mask <span>→</span> GPT-5.6 attacks <span>→</span> anonymized PDF <span>→</span> restore</div>
+    </div>
+    <footer>
+      <div class="brand">Privilege<i>.</i></div>
+      <div class="meta">Local preflight · OpenAI Build Week</div>
+    </footer>
+  </div>
+</body>
+</html>

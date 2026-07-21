@@ -148,10 +148,11 @@ const browser = await launch();
     badge.className = 'decision-badge allow';
     $('sanitized').textContent = data.allow_text;
     $('export-actions').style.display = 'flex';
+    $('pass-label').textContent = '· pass 2';
     $('trust').innerHTML =
-      '<strong>Allow</strong> — GPT-5.6 found no material disclosure. Copy this safe text into ChatGPT, Claude, or another tool.';
+      '<strong>Allow</strong> under this engagement policy. Download the anonymized PDF for ChatGPT, Claude, or another tool — then restore names from the reply.';
 
-    $('notice').textContent = 'Allow. Paste the safe text into another AI, then restore names from the reply.';
+    $('notice').textContent = 'Allow. Download the anonymized PDF, then restore names from the reply.';
     $('receipts-fold').open = false;
 
     // Article crop: hide secondary chrome; keep the four-step story readable
@@ -172,7 +173,7 @@ const browser = await launch();
       'Depot leases in that corridor expire in Q3. The board has not yet announced any change.';
     $('sanitized').style.maxHeight = '4.8em';
     $('trust').innerHTML =
-      '<strong>Allow</strong> — no material disclosure. Copy into ChatGPT, Claude, or another tool.';
+      '<strong>Allow</strong> under this engagement policy. Download the anonymized PDF for any external AI.';
   }, vault);
 
   await page.addStyleTag({

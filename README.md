@@ -81,6 +81,7 @@ I point a frontier model at the sanitized document and let it try.
   text, abstract rules, and prior sanitized payloads for that destination.
 - Not document-ownership detection. Attestation is mine to assert.
 - Not layout-faithful PDF redaction. The export PDF is rebuilt from sanitized text.
+- Not a restored-PDF / deliverable generator. Step 4 restores **text** locally; turning that into a polished PDF or deck is out of scope for this build.
 - Not a replacement for client consent. It is a data-minimisation control.
 
 Offline demos may use `PRIVILEGE_DEMO_ATTACK=1` (scripted mosaic). The UI labels

@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 GALLERY="$ROOT/tools/devpost-gallery"
 PORT="${PRIVILEGE_PORT:-7077}"
 DB="${PRIVILEGE_DEMO_DB:-/tmp/privilege-pdf-demo.sqlite3}"
-MODE="${CHATGPT_MODE:-auto}"
+MODE="${CHATGPT_MODE:-sim}"
 
 cd "$ROOT"
 rm -f "$DB"

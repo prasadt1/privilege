@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>YouTube thumbnail 16:9</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #0f0d0b; }
+  body {
+    width: 1280px;
+    height: 720px;
+    color: #f4efe6;
+    font-family: "Iowan Old Style", Palatino, Georgia, serif;
+    background:
+      radial-gradient(700px 420px at 15% 20%, rgba(245,166,35,.18), transparent 55%),
+      radial-gradient(500px 360px at 88% 80%, rgba(245,166,35,.08), transparent 50%),
+      linear-gradient(150deg, #1a1612 0%, #0c0a09 60%, #15120f 100%);
+  }
+  #frame {
+    width: 1280px;
+    height: 720px;
+    padding: 56px 64px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .kicker {
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #f5a623;
+  }
+  h1 {
+    margin-top: 18px;
+    font-size: 58px;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.06;
+    max-width: 16ch;
+  }
+  h1 em { font-style: italic; color: #f7d59a; font-weight: 600; }
+  .lede {
+    margin-top: 18px;
+    max-width: 36ch;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 22px;
+    line-height: 1.4;
+    color: #b9b0a3;
+  }
+  footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .brand { font-size: 28px; font-weight: 750; letter-spacing: -0.03em; }
+  .brand i { color: #f5a623; font-style: normal; }
+  .badge {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f0d0b;
+    background: #f5a623;
+    padding: 8px 14px;
+    border-radius: 999px;
+    letter-spacing: .02em;
+  }
+</style>
+</head>
+<body>
+  <div id="frame">
+    <div>
+      <div class="kicker">Privilege · demo</div>
+      <h1>Mask. Attack.<br /><em>Then ship the PDF.</em></h1>
+      <p class="lede">GPT-5.6 as the blind attacker — before ChatGPT ever sees the client.</p>
+    </div>
+    <footer>
+      <div class="brand">Privilege<i>.</i></div>
+      <div class="badge">OpenAI Build Week</div>
+    </footer>
+  </div>
+</body>
+</html>

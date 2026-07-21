@@ -156,35 +156,34 @@
     <span class="tag">· Work &amp; Productivity</span>
   </header>
   <p class="lede">
-    Make a client document safe for any AI — without pasting the raw file into
-    ChatGPT, Claude, or Codex. Privilege masks locally, GPT-5.6 attacks the
-    masked version, then you export a verified-safe copy and restore names when
-    the answer comes back.
+    Make a client PDF safe for any AI — without uploading the raw file.
+    Privilege masks locally, GPT-5.6 attacks the masked draft, then you download
+    an anonymized PDF and restore names when the answer comes back.
   </p>
 
   <div id="journey">
     <div class="step">
       <div class="num">01</div>
       <h2>What stays confidential</h2>
-      <p>Protected names and plain-English rules, once per client. Preview shows the abstracted policy a model would see.</p>
+      <p>Protected names and plain-English rules, once per engagement. Preview shows the abstracted policy a model would see.</p>
       <div class="where local">ENGAGEMENT POLICY</div>
     </div>
     <div class="step">
       <div class="num">02</div>
-      <h2>Add the document</h2>
-      <p>Drop PDF / DOCX / text into the local viewer. Extraction stays on-device; the raw file never leaves the laptop.</p>
+      <h2>Add &amp; attest the PDF</h2>
+      <p>Upload the client PDF. Extraction stays on-device. You attest it belongs under this engagement — Privilege does not verify ownership.</p>
       <div class="where local">LOCAL VAULT</div>
     </div>
     <div class="step">
       <div class="num">03</div>
-      <h2>Make it safe for AI</h2>
-      <p>Privilege masks, then GPT-5.6 tries to re-identify the client against prior disclosures. You get Allow / Transform / Block plus a copyable safe document.</p>
-      <div class="where cloud">ATTACK → EXPORT</div>
+      <h2>Anonymize → attack</h2>
+      <p>Privilege masks, then GPT-5.6 tries to re-identify the client against prior disclosures. Allow / Transform / Block, then download an anonymized PDF.</p>
+      <div class="where cloud">ATTACK → PDF OUT</div>
     </div>
     <div class="step">
       <div class="num">04</div>
       <h2>Restore real names</h2>
-      <p>Paste the reply from ChatGPT, Claude, or another tool. Placeholders become real names only on this machine.</p>
+      <p>Use that PDF in ChatGPT, Claude, or another tool. Paste the reply back — placeholders become real names only on this machine.</p>
       <div class="where local">REHYDRATE LOCALLY</div>
     </div>
   </div>
@@ -202,7 +201,7 @@
     </div>
     <div class="panel" id="panel-ask">
       <h3>Optional · ask here <span class="badge allow">ALLOW</span></h3>
-      <p>Prefer to keep everything in Privilege? Check, then send an approved payload to OpenAI and restore the answer locally. Export remains the default path.</p>
+      <p>Prefer to keep everything in Privilege? Check, then send an approved payload to OpenAI and restore the answer locally. Anonymized PDF export remains the default path.</p>
     </div>
     <div class="panel">
       <h3>Optional · agent path</h3>
@@ -211,7 +210,7 @@
   </div>
 
   <footer>
-    Default path: policy → document → attack-verified export → use any AI → restore names · mosaic ledger accumulates across exports
+    Default path: policy → attest PDF → attack → anonymized PDF → any AI → restore names · mosaic ledger accumulates across exports
   </footer>
 </div>
 </body>

@@ -1,20 +1,35 @@
 # Devpost gallery — Privilege
 
-Regenerate: see [`tools/devpost-gallery/REGENERATE.md`](../../tools/devpost-gallery/REGENERATE.md).
+Upload from `docs/media/`. Captions are **≤100 characters** for the Devpost form.
 
-Embeds in the project story use raw GitHub URLs under `docs/media/`. Upload the
-same PNGs to the Devpost image gallery with the titles below.
+## Upload order (recommended)
 
-| File | Gallery title | Caption |
-|------|---------------|---------|
-| `consultant-workflow.png` | Consultant workflow | **Shipped (visual B).** Four-step export path: policy → document → attack-verified export → restore names. Fork: mosaic on next doc / optional ask-here / MCP. |
-| `consultant-workflow-a.png` | Consultant workflow (text A, archive) | Text-forward four steps — kept for reference; not embedded in the story. |
-| `consultant-workflow-b.png` | Consultant workflow (visual B, alias) | Same render as `consultant-workflow.png`. |
-| `architecture.png` | Trust boundary | Raw documents, the vault, and restored output stay on the laptop. OpenAI receives only sanitized text, abstract rules, and prior sanitized payloads. |
-| `viewer-three-column.png` | Export-first viewer (step flow) | Guided steps: confidential terms → document → make safe for AI → restore names. Filename kept for URL stability; UI is no longer three columns. |
-| `receipt-expanded.png` | Receipt: GPT-5.6 inferences on the mosaic turn | Prior disclosures climb; on the Transform turn the attacker re-identifies the corridor by description. Nothing staged — committed live vault. |
-| `policy-form.png` | Policy form + what OpenAI would receive | Landscape card: left = engagement fields, right = abstracted policy preview. Same content as step 1, sized for article scroll. |
+| # | File | Gallery title | Caption (≤100) | Chars |
+|---|------|---------------|----------------|------:|
+| 1 | `consultant-workflow.png` | Consultant workflow | PDF in → attest → GPT-5.6 attack → anonymized PDF out → restore names. | 70 |
+| 2 | `architecture.png` | Trust boundary | Raw docs stay local. OpenAI only sees sanitized text and abstract rules. | 72 |
+| 3 | `viewer-three-column.png` | Step UI · anonymized PDF | Step UI: Allow under policy, then download the anonymized PDF. | 62 |
+| 4 | `receipt-expanded.png` | Receipt · mosaic Transform | Live GPT-5.6 receipt: mosaic Transform when the corridor is re-identified. | 74 |
+| 5 | `policy-form.png` | Policy + abstracted preview | Engagement policy fields next to the abstracted preview OpenAI would see. | 73 |
+| 6 | `codex/codex-session-gpt56.png` | Codex CLI · GPT-5.6 | Codex CLI with GPT-5.6: vault, sanitizer, attack loop — runtime attacker. | 73 |
 
-Suggested Devpost gallery order: workflow → architecture → viewer → receipt → policy.
+## Embedded in the story vs gallery-only
 
-(Eval numbers live in the story table — no separate `eval-table.png`.)
+**Usually in the lean article embeds:** workflow, viewer, receipt (and sometimes architecture).  
+**Still upload them to the gallery** — Devpost gallery is separate from story embeds; judges browse both.
+
+**Extra vs the lean story (upload these too):**
+- `policy-form.png` — policy UX without cluttering the story
+- `codex/codex-session-gpt56.png` — Codex evidence (strong for Build Week)
+
+## Do not upload
+
+| File | Why |
+|------|-----|
+| `consultant-workflow-a.png` | Archive / duplicate story |
+| `consultant-workflow-b.png` | Duplicate of #1 |
+| `codex/codex-session-resume.png` | Redundant with #6 |
+| `codex/codex-terminal-alt.png` | Weaker / redundant |
+| Video files | Upload to YouTube, not the image gallery |
+
+Regenerate PNGs: [`tools/devpost-gallery/REGENERATE.md`](../../tools/devpost-gallery/REGENERATE.md).

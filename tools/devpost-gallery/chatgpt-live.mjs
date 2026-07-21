@@ -18,7 +18,7 @@ export async function openChatGPT(context, { beat = console.log, sleep }) {
   const page = await context.newPage();
   beat('ChatGPT — open');
   await page.goto(CHATGPT_URL, { waitUntil: 'domcontentloaded', timeout: 120000 });
-  await sleep(page, 4000);
+  await sleep(page, 1800);
 
   // Cookie / consent banners
   for (const label of ['Accept all', 'Accept', 'Agree', 'Got it', 'OK']) {
@@ -92,22 +92,33 @@ async function attachPdf(page, pdfPath, { beat, sleep }) {
     },
     { timeout: 120000 },
   ).catch(() => {});
-  await sleep(page, 2500);
+  await sleep(page, 1000);
 }
 
 async function typePrompt(page, text, { beat, sleep }) {
   beat('ChatGPT — type prompt');
   const composer = page.locator('#prompt-textarea, [data-testid="prompt-textarea"]').first();
   await composer.click({ timeout: 15000 });
-  await sleep(page, 500);
-  // contenteditable: type works more reliably than fill
-  await page.keyboard.type(text, { delay: 12 });
-  await sleep(page, 1500);
+  await sleep(page, 300);
+  // Faster typing for demo pacing; still visible on camera
+  await page.keyboard.type(text, { delay: 4 });
+  await sleep(page, 600);
 }
 
 async function sendAndWait(page, { beat, sleep }) {
   beat('ChatGPT — send + wait for reply');
   const before = await page.locator('[data-message-author-role="assistant"]').count();
+
+  // Visible wait banner so the camera never stares at a blank composer
+  await page.evaluate(() => {
+    document.getElementById('privilege-wait-banner')?.remove();
+    const b = document.createElement('div');
+    b.id = 'privilege-wait-banner';
+    b.style.cssText =
+      'position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:9999;background:#111;color:#f5a623;border:1px solid #f5a623;border-radius:999px;padding:10px 18px;font:600 13px ui-sans-serif,system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.45)';
+    b.textContent = 'Waiting for ChatGPT reply…';
+    document.body.appendChild(b);
+  }).catch(() => {});
 
   const send = page.locator(
     'button[data-testid="send-button"], button[aria-label="Send prompt"], button[aria-label*="Send"]',
@@ -118,22 +129,20 @@ async function sendAndWait(page, { beat, sleep }) {
     await page.keyboard.press('Enter');
   }
 
-  // Wait until a new assistant turn appears and streaming finishes
   await page.waitForFunction(
     (prev) => document.querySelectorAll('[data-message-author-role="assistant"]').length > prev,
     before,
-    { timeout: 180000 },
+    { timeout: 90000 },
   );
 
-  // Stop button present while generating
   const stop = page.locator(
     'button[data-testid="stop-button"], button[aria-label*="Stop"]',
   ).first();
-  await stop.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {});
-  await stop.waitFor({ state: 'hidden', timeout: 300000 }).catch(() => {});
+  await stop.waitFor({ state: 'visible', timeout: 20000 }).catch(() => {});
+  await stop.waitFor({ state: 'hidden', timeout: 120000 }).catch(() => {});
 
-  // Extra settle for late tokens
-  await sleep(page, 4000);
+  await page.evaluate(() => document.getElementById('privilege-wait-banner')?.remove()).catch(() => {});
+  await sleep(page, 1500);
 
   const assistants = page.locator('[data-message-author-role="assistant"]');
   const n = await assistants.count();
@@ -152,7 +161,7 @@ export async function runLiveChatGPTOnPage(page, pdfPath, helpers) {
   const { beat, sleep } = helpers;
   beat('ChatGPT — open');
   await page.goto(CHATGPT_URL, { waitUntil: 'domcontentloaded', timeout: 120000 });
-  await sleep(page, 4000);
+  await sleep(page, 1800);
 
   for (const label of ['Accept all', 'Accept', 'Agree', 'Got it', 'OK']) {
     const btn = page.getByRole('button', { name: label, exact: false }).first();
@@ -191,7 +200,7 @@ export async function runLiveChatGPTOnPage(page, pdfPath, helpers) {
     await typePrompt(page, PROMPT, helpers);
     const reply = await sendAndWait(page, helpers);
     beat(`ChatGPT — got reply (${reply.length} chars)`);
-    await sleep(page, 8000);
+    await sleep(page, 2800);
     return { reply };
   } catch (err) {
     const shot = joinMediaShot();

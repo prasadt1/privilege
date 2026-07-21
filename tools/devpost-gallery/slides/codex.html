@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Privilege — Codex</title>
+<style>
+  :root {
+    --ink: #f4efe6;
+    --muted: #b9b0a3;
+    --amber: #f5a623;
+    --canvas: #0f0d0b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--canvas); }
+  body {
+    width: 1920px;
+    height: 1248px;
+    color: var(--ink);
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0f0d0b;
+  }
+  #frame {
+    width: 1920px;
+    height: 1248px;
+    padding: 36px 44px 28px;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 16px;
+  }
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 24px;
+  }
+  .kicker {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-family: "Iowan Old Style", Palatino, Georgia, serif;
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    max-width: 24ch;
+  }
+  .note {
+    max-width: 26ch;
+    text-align: right;
+    font-size: 18px;
+    line-height: 1.4;
+    color: var(--muted);
+  }
+  .shot {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.12);
+    background: #050505;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+  }
+  .shot img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center top;
+  }
+  footer {
+    font-size: 17px;
+    color: var(--muted);
+    letter-spacing: .02em;
+  }
+  footer strong { color: var(--amber); font-weight: 700; }
+</style>
+</head>
+<body>
+  <div id="frame">
+    <div class="top">
+      <div>
+        <div class="kicker">Built in Codex · GPT-5.6</div>
+        <h1>Vault, sanitizer, attack loop — then GPT-5.6 is the attacker at runtime.</h1>
+      </div>
+      <p class="note">Codex CLI session evidence. Core path shipped with GPT-5.6 before the quota ended.</p>
+    </div>
+    <div class="shot">
+      <img id="codex" alt="Codex session" />
+    </div>
+    <footer><strong>Not decorative:</strong> the same model family that threatens the mosaic is the measuring instrument.</footer>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const src = params.get('src') || '../../docs/media/codex/codex-session-gpt56.png';
+    document.getElementById('codex').src = src;
+  </script>
+</body>
+</html>
