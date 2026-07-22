@@ -18,7 +18,7 @@ AI, then restore real names from the reply locally.
 >
 > | Path | Link / command | Time |
 > | --- | --- | --- |
-> | **Watch the demo** | YouTube (Unlisted) — paste from Devpost | ~3 min |
+> | **Watch the demo** | [YouTube — What is the purpose of this Privilege?](https://youtu.be/BKFIwCOh8vY) | 2:47 |
 > | **Clone + tests** | commands below | ~1 min |
 > | **Inspect live GPT-5.6 receipts (no key)** | `demo/demo-vault.sqlite3` + local viewer | ~60 s |
 > | **Eval honesty** | [`eval/README.md`](eval/README.md) | 2 min |

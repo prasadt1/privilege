@@ -12,7 +12,7 @@
 ## Title (≤100 chars)
 
 ```
-Privilege: GPT-5.6 attacks your sanitized client PDF before ChatGPT sees it
+What is the purpose of this Privilege?
 ```
 
 Alt (shorter):
